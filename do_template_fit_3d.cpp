@@ -427,27 +427,55 @@ void draw_eec(TString fout_name, TString &folder, bool &isMC, TString &pT_select
     // Get data
     TH3D *h3D = (TH3D*)file->Get("h_data");
 
-    
     //Get full MC samples
-    TH3D *h3D_mc = (TH3D*)file->Get("h_dijet_all");
-    TH2D *hmc_2D = (TH2D*)h3D_mc->Project3D("zy")->Clone("hmc_2D");
-    TH1D *hmc = (TH1D*)hmc_2D->ProjectionX("hmc", pt_bin, pt_bin);
+    TH3D *h3D_dijet_all = (TH3D*)file->Get("h_dijet_all");
+    TH2D *h2D_dijet_all = (TH2D*)h3D_dijet_all->Project3D("zy")->Clone("h2D_dijet_all");
+    TH1D *h1D_dijet_all = (TH1D*)h2D_dijet_all->ProjectionX("h1D_dijet_all", pt_bin, pt_bin);
 
+    TH3D *h3D_bjet_all = (TH3D*)file->Get("h_bjet_all");
+    TH2D *h2D_bjet_all = (TH2D*)h3D_bjet_all->Project3D("zy")->Clone("h2D_bjet_all");
+    TH1D *h1D_bjet_all = (TH1D*)h2D_bjet_all->ProjectionX("h1D_bjet_all", pt_bin, pt_bin);
+
+    TH1D *h1D_all = (TH1D*)h1D_dijet_all->Clone("h1D_all");
+    h1D_all->Add(h1D_bjet_all);
+
+    
     //Get 1 b samples
-    TH3D *h3D_1b = (TH3D*)file->Get("h_dijet_b1");
-    TH2D *h1b_2D = (TH2D*)h3D_1b->Project3D("zy")->Clone("h1b_2D");
-    TH1D *h1b = (TH1D*)h1b_2D->ProjectionX("h1b", pt_bin, pt_bin);
+    TH3D *h3D_dijet_b1 = (TH3D*)file->Get("h_dijet_b1");
+    TH2D *h2D_dijet_b1 = (TH2D*)h3D_dijet_b1->Project3D("zy")->Clone("h2D_dijet_b1");
+    TH1D *h1D_dijet_b1 = (TH1D*)h2D_dijet_b1->ProjectionX("h1D_dijet_b1", pt_bin, pt_bin);
 
+    TH3D *h3D_bjet_b1 = (TH3D*)file->Get("h_bjet_b1");
+    TH2D *h2D_bjet_b1 = (TH2D*)h3D_bjet_b1->Project3D("zy")->Clone("h2D_bjet_b1");
+    TH1D *h1D_bjet_b1 = (TH1D*)h2D_bjet_b1->ProjectionX("h1D_bjet_b1", pt_bin, pt_bin);
+
+    TH1D *h1D_b1 = (TH1D*)h1D_dijet_b1->Clone("h1D_b1");
+    h1D_b1->Add(h1D_bjet_b1);
+    
     //Get more b samples
-    TH3D *h3D_moreb = (TH3D*)file->Get("h_dijet_b2");
-    TH2D *hmoreb_2D = (TH2D*)h3D_moreb->Project3D("zy")->Clone("hmoreb_2D");
-    TH1D *hmoreb = (TH1D*)hmoreb_2D->ProjectionX("hmoreb", pt_bin, pt_bin);
+    TH3D *h3D_dijet_b2 = (TH3D*)file->Get("h_dijet_b2");
+    TH2D *h2D_dijet_b2 = (TH2D*)h3D_dijet_b2->Project3D("zy")->Clone("h2D_dijet_b2");
+    TH1D *h1D_dijet_b2 = (TH1D*)h2D_dijet_b2->ProjectionX("h1D_dijet_b2", pt_bin, pt_bin);
 
+    TH3D *h3D_bjet_b2 = (TH3D*)file->Get("h_bjet_b2");
+    TH2D *h2D_bjet_b2 = (TH2D*)h3D_bjet_b2->Project3D("zy")->Clone("h2D_bjet_b2");
+    TH1D *h1D_bjet_b2 = (TH1D*)h2D_bjet_b2->ProjectionX("h1D_bjet_b2", pt_bin, pt_bin);
+
+    TH1D *h1D_b2 = (TH1D*)h1D_dijet_b2->Clone("h1D_b2");
+    h1D_b2->Add(h1D_bjet_b2);
+	
     //Get other background samples
-    TH3D *h3D_other = (TH3D*)file->Get("h_dijet_other");
-    TH2D *hother_2D = (TH2D*)h3D_other->Project3D("zy")->Clone("hother_2D");
-    TH1D *hother = (TH1D*)hother_2D->ProjectionX("hother", pt_bin, pt_bin);
+    TH3D *h3D_dijet_other = (TH3D*)file->Get("h_dijet_other");
+    TH2D *h2D_dijet_other = (TH2D*)h3D_dijet_other->Project3D("zy")->Clone("h2D_dijet_other");
+    TH1D *h1D_dijet_other = (TH1D*)h2D_dijet_other->ProjectionX("h1D_dijet_other", pt_bin, pt_bin);
 
+    TH3D *h3D_bjet_other = (TH3D*)file->Get("h_bjet_other");
+    TH2D *h2D_bjet_other = (TH2D*)h3D_bjet_other->Project3D("zy")->Clone("h2D_bjet_other");
+    TH1D *h1D_bjet_other = (TH1D*)h2D_bjet_other->ProjectionX("h1D_bjet_other", pt_bin, pt_bin);
+
+    TH1D *h1D_other = (TH1D*)h1D_dijet_other->Clone("h1D_other");
+    h1D_other->Add(h1D_bjet_other);
+    
     //Get the efficiency correction factor data
     //    TFile *file3D_1b_notag = new TFile(folder + "hist_3d_gen_aggr_n1_b_dijet_notag_" + pT_selection + ".root", "read"); //ATTENTION
     TFile *file3D_1b_notag = new TFile(folder + "hist_3d_gen_aggr_n1_MC_dijet_notag_" + pT_selection + ".root", "read");
@@ -508,10 +536,10 @@ void draw_eec(TString fout_name, TString &folder, bool &isMC, TString &pT_select
         heec->Scale(1/heec->Integral(), "width");
         heec_bkg_bb->Scale(1/heec_bkg_bb->Integral(), "width");
         heec_bkg_rest->Scale(1/heec_bkg_rest->Integral(), "width");
-        h1b->Scale(1/h1b->Integral(), "width");
-        hmoreb->Scale(1/hmoreb->Integral(), "width");
-        hother->Scale(1/hother->Integral(), "width");
-        hmc->Scale(1/hmc->Integral(), "width");
+        h1D_b1->Scale(1/h1D_b1->Integral(), "width");
+        h1D_b2->Scale(1/h1D_b2->Integral(), "width");
+        h1D_other->Scale(1/h1D_other->Integral(), "width");
+        h1D_all->Scale(1/h1D_all->Integral(), "width");
     }
 
     //Plot
@@ -553,28 +581,28 @@ void draw_eec(TString fout_name, TString &folder, bool &isMC, TString &pT_select
         heec_bkg_rest->Draw("P0EHIST SAME");
 
         //Comparisons
-        h1b->Draw("P0EHIST SAME");
-        h1b->SetMarkerStyle(24);
-        h1b->SetMarkerColor(kRed+1);
-        h1b->SetLineColor(kRed+1);
-        hmoreb->Draw("P0EHIST SAME");
-        hmoreb->SetMarkerStyle(24);
-        hmoreb->SetMarkerColor(kBlue+1);
-        hmoreb->SetLineColor(kBlue+1);
-        hother->Draw("P0EHIST SAME");
-        hother->SetMarkerStyle(24);
-        hother->SetMarkerColor(kOrange);
-        hother->SetLineColor(kOrange);
-        hmc->Draw("P0EHIST SAME");
-        hmc->SetMarkerStyle(3);
-        hmc->SetMarkerColor(kMagenta);
-        hmc->SetLineColor(kMagenta);
+        h1D_b1->Draw("P0EHIST SAME");
+        h1D_b1->SetMarkerStyle(24);
+        h1D_b1->SetMarkerColor(kRed+1);
+        h1D_b1->SetLineColor(kRed+1);
+        h1D_b2->Draw("P0EHIST SAME");
+        h1D_b2->SetMarkerStyle(24);
+        h1D_b2->SetMarkerColor(kBlue+1);
+        h1D_b2->SetLineColor(kBlue+1);
+        h1D_other->Draw("P0EHIST SAME");
+        h1D_other->SetMarkerStyle(24);
+        h1D_other->SetMarkerColor(kOrange);
+        h1D_other->SetLineColor(kOrange);
+        h1D_all->Draw("P0EHIST SAME");
+        h1D_all->SetMarkerStyle(3);
+        h1D_all->SetMarkerColor(kMagenta);
+        h1D_all->SetLineColor(kMagenta);
     
 
-        leg->AddEntry(hmc, "MC not fitted");
-        leg->AddEntry(h1b, "1 B");
-        leg->AddEntry(hmoreb, "more B");
-        leg->AddEntry(hother, "other");
+        leg->AddEntry(h1D_all, "MC not fitted");
+        leg->AddEntry(h1D_b1, "1 B");
+        leg->AddEntry(h1D_b2, "more B");
+        leg->AddEntry(h1D_other, "other");
 
         leg->Draw("SAME");
     }
@@ -594,7 +622,7 @@ void do_template_fit_3d(bool isMC = false){
   TString pT_selection = "80_140";
   TString pT_selection_label = "80 < pT < 140 GeV";
     
-  TString folder = "/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/";
+  TString folder = "/data_CMS/cms/zaidan/test_for_code_mods/smaller_bins/";
   TString fout_name = folder + "histos_3d_from_templ_data_" + pT_selection + ".root";
   
     //Template fit using also the bjet distribution
