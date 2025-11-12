@@ -19,14 +19,7 @@ Analysis code for the EEC project, in the Heavy Ions group at LLR-CMS, at CERN .
 4. Run tests:
 
 ## Project layout (suggested)
-- data/           # raw and processed data (do not commit raw sensitive data)
-- notebooks/      # exploratory analysis notebooks
-- src/            # analysis scripts and packages
-- tests/          # unit tests
-- docs/           # documentation
+- get_eec_3d_histograms.cpp/           # code to make histograms from Lida's data
+- do_template_fit_3d.cpp/      # code to make the template fit
+- more to be added
 
-## Contributing
-Please see CONTRIBUTING.md for the development workflow.
-
-## License
-This project is licensed under the MIT License — see LICENSE for details.
