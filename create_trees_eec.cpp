@@ -979,7 +979,7 @@ void create_trees_eec(int dataType = 1,
 //, "/data_CMS/cms/kalipoliti/herwigMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"};//
   //std::vector<TString> datasets{"dijet"};//"bjet"};//, "bjet_herwig"};//
 
-    TString folder = "/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/trees/";
+    TString folder = "$mydata/test_for_code_mods/run_with_mod_code/trees/";
 
     //Create cuts and labels
     //    std::vector<Int_t> cuts_vec{4};//, 2, 3, 4};
