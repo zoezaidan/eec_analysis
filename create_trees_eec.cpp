@@ -2,6 +2,9 @@
 //build the response matrix (works for all dimensions of the unfolding)
 #include "tTree.h"
 #include "binning_histos.h"
+#include "Math/GenVector/VectorUtil.h"
+#pragma cling load("libGenVector.so")
+
 
 //Skip MC that have a too large event weight
 bool skipMC(double jtpt, double pthat) {//double refpt
@@ -481,6 +484,12 @@ void match_tracks(std::vector<ROOT::Math::PtEtaPhiMVector>& trackVectors_reco_re
 
 //Create trees storing informations on 2-point EEC to build the response matrix
 void do_trees(TString &filename,  TString &dataset, TString &label, TString &folder, Int_t &n, Float_t &pT_low, Float_t &pT_high, bool &aggregated, Int_t &cuts, bool &btag, bool &matching){
+void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &folder, Int_t &n, Float_t &pT_low, Float_t &pT_high, bool &aggregated, bool &btag, bool &matching, Int_t &beg_event, Int_t &end_event, const char* output_name){
+
+  bool isMC = true;
+  if(dataType <= 0) {isMC = false;
+  }
+
     TString fin_name = filename;//
     tTree t(fin_name);
 
@@ -494,7 +503,7 @@ void do_trees(TString &filename,  TString &dataset, TString &label, TString &fol
 
     if(!btag) label += "_notag"; 
 
-    fout_name += TString(Form("n%i_",n)) + label + "_" + dataset + "_" + TString(Form("%i_%i",int(pT_low), int(pT_high))) + ".root";
+    fout_name += TString(Form("n%i_",n))  + label + "_" + TString(Form("%i_%i",int(pT_low), int(pT_high)))+ "_" + output_name ;
 
 
     //Create output file and tree to store all the values
@@ -579,12 +588,10 @@ void do_trees(TString &filename,  TString &dataset, TString &label, TString &fol
     Double_t tot_reco_matched_tracks_used = 0;
 
     //looping over events
+
+    int maxEvents = end_event; //t.GetEntries();     
     std::cout << "Looping over events" << std::endl;
-    for (Long64_t ient = 0; ient <= t.GetEntries(); ient++) { // 
-        // Print progress
-        if (ient % 20000 == 0) {
-            std::cout << "entry nb = " << ient << std::endl;
-        }
+    for (Long64_t ient = beg_event; ient<maxEvents && ient <= end_event; ient++) { // 
  
         t.GetEntry(ient); 
 
@@ -666,256 +673,231 @@ void do_trees(TString &filename,  TString &dataset, TString &label, TString &fol
             if (aggregated) mB_gen = ReconstuctSingleB_gen(trackVectors_gen, t, ijet);
             else{
                 create_trackVectors_gen(trackVectors_gen, t, ijet);
+	  jtHadFlav = t.jtHadFlav[ijet];
+	  jtNbHad = t.jtNbHad[ijet];
+	  	  
+	  //Save jet information
+	  jt_eta_gen = t.refeta[ijet];
+	  jt_eta_reco = t.jteta[ijet];
+	  jpt_gen = t.refpt[ijet];
+	  jpt_reco = t.jtpt[ijet];
+	  discr = t.discr_particleNet_BvsAll[ijet];
+	  
+
+	  //Select and build the track vectors
+	  
+	  //create a track vector for the i jet at GEN
+	  std::vector<ROOT::Math::PtEtaPhiMVector> trackVectors_gen;
+	  std::vector<ROOT::Math::PtEtaPhiMVector> trackVectors_gen_notmatched;
+	  
+	  
+	  //create a track vector for the i jet at RECO
+	  std::vector<ROOT::Math::PtEtaPhiMVector> trackVectors;
+	  std::vector<ROOT::Math::PtEtaPhiMVector> trackVectors_notmatched;
+
+	  //Aggregate and match tracks
+          
+	  // Aggregate 1 b hadron gen, get mB
+	  if (aggregated) mB_gen = ReconstuctSingleB_gen(trackVectors_gen, t, ijet);
+	  else{
+	    create_trackVectors_gen(trackVectors_gen, t, ijet);
                 mB_gen = t.refmB[ijet];
-            }
-
-            // Aggregate 1 b hadron reco, get mB
-            if (aggregated) mB_reco = ReconstuctSingleB_reco(trackVectors, t, ijet);
-            else{
-                create_trackVectors_reco(trackVectors, t, ijet);
-                mB_reco = t.jtmB[ijet];
-            } 
-
-            //Get the total nr of tracks before matching
-            tot_gen_tracks += trackVectors_gen.size();
-            tot_reco_tracks += trackVectors.size();
-
-            if(matching) match_tracks(trackVectors, trackVectors_notmatched, trackVectors_gen, trackVectors_gen_notmatched, t, ijet);
+	  }
+	  
+	  // Aggregate 1 b hadron reco, get mB
+	  if (aggregated) mB_reco = ReconstuctSingleB_reco(trackVectors, t, ijet);
+	  else{
+	    create_trackVectors_reco(trackVectors, t, ijet);
+	    mB_reco = t.jtmB[ijet];
+	  } 
+	  
+	  //Get the total nr of tracks before matching
+	  tot_gen_tracks += trackVectors_gen.size();
+	  tot_reco_tracks += trackVectors.size();
+	    
+	  if(matching) match_tracks(trackVectors, trackVectors_notmatched, trackVectors_gen, trackVectors_gen_notmatched, t, ijet);
+          
+	  //Save nr of tracks after the matching
+	  tot_gen_matched_tracks += trackVectors_gen.size();
+	  tot_reco_matched_tracks += trackVectors.size();
+	  
+	  //Create dr and eec weight
+	  
+	  //______________GEN_________________
+          
+	  //save jet eta and phi
+	  Float_t jet_eta = t.refeta[ijet];
+	  Float_t jet_phi = t.refphi[ijet];
+	  
+	  // Set the new nr of tracks and keep record of the number of entries for dr
+	  n_tracks_gen = trackVectors_gen.size(); 
+	  Int_t count_dr_gen = 0;
+	  
+	  // Loop over the matched tracks gen
+	  for (Int_t i = 0; i < n_tracks_gen; i++) { 
+	    
+	    Float_t etai = trackVectors_gen[i].Eta();
+	    Float_t phii = trackVectors_gen[i].Phi();
+	    Float_t ipt = trackVectors_gen[i].Pt();
+	    
+	    //Select tracks with pT > 1 GeV
+	    if(ipt < 1) continue;
+	    //See how many tracks passed this cut
+	    tot_gen_matched_tracks_used += 1;
             
-            //Save nr of tracks after the matching
-            tot_gen_matched_tracks += trackVectors_gen.size();
-            tot_reco_matched_tracks += trackVectors.size();
-
-            //Create dr and eec weight
-
-            //______________GEN_________________
-            
-            //save jet eta and phi
-            Float_t jet_eta = t.refeta[ijet];
-            Float_t jet_phi = t.refphi[ijet];
-
-            // Set the new nr of tracks and keep record of the number of entries for dr
-            n_tracks_gen = trackVectors_gen.size(); 
-            Int_t count_dr_gen = 0;
-
-            // Loop over the matched tracks gen
-            for (Int_t i = 0; i < n_tracks_gen; i++) { 
-                
-                Float_t etai = trackVectors_gen[i].Eta();
-                Float_t phii = trackVectors_gen[i].Phi();
-                Float_t ipt = trackVectors_gen[i].Pt();
-
-                //Select tracks with pT > 1 GeV
-                if(ipt < 1) continue;
-                //See how many tracks passed this cut
-                tot_gen_matched_tracks_used += 1;
-                
-
-                // Loop over pairs
-                for(Int_t j=0; j < i; j++){
-                    
-                    Float_t etaj = trackVectors_gen[j].Eta();
-                    Float_t phij = trackVectors_gen[j].Phi();
-                    Float_t jpt = trackVectors_gen[j].Pt();
-
-                    if(jpt < 1) continue;
-                    
+	    
+	    // Loop over pairs
+	    for(Int_t j=0; j < i; j++){
+	      
+	      Float_t etaj = trackVectors_gen[j].Eta();
+	      Float_t phij = trackVectors_gen[j].Phi();
+	      Float_t jpt = trackVectors_gen[j].Pt();
+	      
+	      if(jpt < 1) continue;
+              
                     // Calculate and save dr
-                    dr_gen[count_dr_gen] = t.calc_dr(etai, phii, etaj, phij);
+	      dr_gen[count_dr_gen] = t.calc_dr(etai, phii, etaj, phij);
+	      
+	      // Calculate and save the eec weight
+	      eec_gen[count_dr_gen] = pow(ipt*jpt, n);
+	      
+	      //One entry added to dr and eec array
+	      count_dr_gen += 1;
+	    }
+	  } 
+	  
+	  //Save total matched pairs
+	  ndr_gen = count_dr_gen;
+	  
+	  //Pair the non-matched tracks withing themselves
+	  
+	  // Set the new nr of tracks and keep record of the number of entries for dr
+	  Int_t n_tracks_gen_tot = trackVectors_gen_notmatched.size();
+	  //Start filling the dr and eec array after the matched pairs
+	  Int_t count_dr_gen_tot = count_dr_gen;
 
-                    // Calculate and save the eec weight
-                    eec_gen[count_dr_gen] = pow(ipt*jpt, n);
+	  // Loop over all tracks gen
+	  for (Int_t i = 0; i < n_tracks_gen_tot; i++) { 
+	    
+	    Float_t etai = trackVectors_gen_notmatched[i].Eta();
+	    Float_t phii = trackVectors_gen_notmatched[i].Phi();
+	    Float_t ipt = trackVectors_gen_notmatched[i].Pt();
+		
 
-                    //One entry added to dr and eec array
-                    count_dr_gen += 1;
-                }
-            } 
+	    if(ipt < 1) continue;
+	    
+	    // Loop over pairs
+	    for(Int_t j=0; j < i; j++){
+	      
+	      Float_t etaj = trackVectors_gen_notmatched[j].Eta();
+	      Float_t phij = trackVectors_gen_notmatched[j].Phi();
+	      Float_t jpt = trackVectors_gen_notmatched[j].Pt();
+	      
+	      if(jpt < 1) continue;                    
+              
+	      // Calculate and store the dr
+	      dr_gen[count_dr_gen_tot] = t.calc_dr(etai, phii, etaj, phij);
+	      
+	      // Calculate and store the eec weight
+	      eec_gen[count_dr_gen_tot] = pow(ipt*jpt, n);
+	      
+	      count_dr_gen_tot += 1;
+	    }
+	  } 
+	  
+	  // Pair non-matched tracks to the matched tracks
+	  for (Int_t i = 0; i < n_tracks_gen_tot; i++) { 
+	    
+	    Float_t etai = trackVectors_gen_notmatched[i].Eta();
+	    Float_t phii = trackVectors_gen_notmatched[i].Phi();
+	    Float_t ipt = trackVectors_gen_notmatched[i].Pt();
+	    
+	    if(ipt < 1) continue;
+	    
+	    // Loop over pairs
+	    for(Int_t j=0; j < n_tracks_gen; j++){
+	      
+	      Float_t etaj = trackVectors_gen[j].Eta();
+	      Float_t phij = trackVectors_gen[j].Phi();
+	      Float_t jpt = trackVectors_gen[j].Pt();
+	      
+	      if(jpt < 1) continue;
+              
+	      // Calculate and store the dr
+	      dr_gen[count_dr_gen_tot] = t.calc_dr(etai, phii, etaj, phij);
+	      
+	      // Calculate and store the eec
+	      eec_gen[count_dr_gen_tot] = pow(ipt*jpt, n);
+	      
+	      count_dr_gen_tot += 1;
+	    }
+	  }
+	  ndr_gen_tot = count_dr_gen_tot;
+	  
+          
+          
+	  
+	  //___________RECO_____________________
+	  
+	  //save jet eta and phi
+	  jet_eta = t.jteta[ijet];
+	  jet_phi = t.jtphi[ijet];
+	  
+          
+	  // Set the new nr of tracks and keep record of the number of entries for dr
+	  n_tracks = trackVectors.size(); 
+	  Int_t count_dr_reco = 0;
+	  
+          
+	  // Pair matched tracks within themselves
+	  // Loop over the tracks reco
+	  for (Int_t i = 0; i < n_tracks; i++) { 
+	    
+	    Float_t etai = trackVectors[i].Eta();
+	    Float_t phii = trackVectors[i].Phi();
+	    Float_t ipt = trackVectors[i].Pt();
+	    
+	    
+	    if(ipt < 1) continue;
+	    tot_reco_matched_tracks_used += 1;
+	    
+	    
+	    // Loop over pairs
+	    for(Int_t j=0; j < i; j++){
+	      
+	      Float_t etaj = trackVectors[j].Eta();
+	      Float_t phij = trackVectors[j].Phi();
+	      Float_t jpt = trackVectors[j].Pt();
+	      
+	      if(jpt < 1) continue;
+	      
+	      // Calculate and store the dr
+	      dr_reco[count_dr_reco] = t.calc_dr(etai, phii, etaj, phij);
+	      
+	      // Calculate and store the eec weight
+	      eec_reco[count_dr_reco] = pow(ipt*jpt, n);
+	      
+	      //add one entry to the eec and dr arrays
+	      count_dr_reco += 1;
+	      
+	    }
+	  }              
 
-            //Save total matched pairs
-            ndr_gen = count_dr_gen;
-
-            //Pair the non-matched tracks withing themselves
-
-            // Set the new nr of tracks and keep record of the number of entries for dr
-            Int_t n_tracks_gen_tot = trackVectors_gen_notmatched.size();
-            //Start filling the dr and eec array after the matched pairs
-            Int_t count_dr_gen_tot = count_dr_gen;
-
-            // Loop over all tracks gen
-            for (Int_t i = 0; i < n_tracks_gen_tot; i++) { 
-                
-                Float_t etai = trackVectors_gen_notmatched[i].Eta();
-                Float_t phii = trackVectors_gen_notmatched[i].Phi();
-                Float_t ipt = trackVectors_gen_notmatched[i].Pt();
-
-
-                if(ipt < 1) continue;
-
-                // Loop over pairs
-                for(Int_t j=0; j < i; j++){
-                    
-                    Float_t etaj = trackVectors_gen_notmatched[j].Eta();
-                    Float_t phij = trackVectors_gen_notmatched[j].Phi();
-                    Float_t jpt = trackVectors_gen_notmatched[j].Pt();
-
-                    if(jpt < 1) continue;                    
-                    
-                    // Calculate and store the dr
-                    dr_gen[count_dr_gen_tot] = t.calc_dr(etai, phii, etaj, phij);
-
-                    // Calculate and store the eec weight
-                    eec_gen[count_dr_gen_tot] = pow(ipt*jpt, n);
-
-                    count_dr_gen_tot += 1;
-                }
-            } 
-
-            // Pair non-matched tracks to the matched tracks
-            for (Int_t i = 0; i < n_tracks_gen_tot; i++) { 
-                
-                Float_t etai = trackVectors_gen_notmatched[i].Eta();
-                Float_t phii = trackVectors_gen_notmatched[i].Phi();
-                Float_t ipt = trackVectors_gen_notmatched[i].Pt();
-
-                if(ipt < 1) continue;
-
-                // Loop over pairs
-                for(Int_t j=0; j < n_tracks_gen; j++){
-                    
-                    Float_t etaj = trackVectors_gen[j].Eta();
-                    Float_t phij = trackVectors_gen[j].Phi();
-                    Float_t jpt = trackVectors_gen[j].Pt();
-
-                    if(jpt < 1) continue;
-                    
-                    // Calculate and store the dr
-                    dr_gen[count_dr_gen_tot] = t.calc_dr(etai, phii, etaj, phij);
-
-                    // Calculate and store the eec
-                    eec_gen[count_dr_gen_tot] = pow(ipt*jpt, n);
-
-                    count_dr_gen_tot += 1;
-                }
-            }
-            ndr_gen_tot = count_dr_gen_tot;
-
-            
-            
-
-            //___________RECO_____________________
-
-            //save jet eta and phi
-            jet_eta = t.jteta[ijet];
-            jet_phi = t.jtphi[ijet];
-
-            
-            // Set the new nr of tracks and keep record of the number of entries for dr
-            n_tracks = trackVectors.size(); 
-            Int_t count_dr_reco = 0;
-
-            
-            // Pair matched tracks within themselves
-            // Loop over the tracks reco
-            for (Int_t i = 0; i < n_tracks; i++) { 
-                
-                Float_t etai = trackVectors[i].Eta();
-                Float_t phii = trackVectors[i].Phi();
-                Float_t ipt = trackVectors[i].Pt();
-
-
-                if(ipt < 1) continue;
-                tot_reco_matched_tracks_used += 1;
-
-
-                // Loop over pairs
-                for(Int_t j=0; j < i; j++){
-                    
-                    Float_t etaj = trackVectors[j].Eta();
-                    Float_t phij = trackVectors[j].Phi();
-                    Float_t jpt = trackVectors[j].Pt();
-
-                    if(jpt < 1) continue;
-
-                    // Calculate and store the dr
-                    dr_reco[count_dr_reco] = t.calc_dr(etai, phii, etaj, phij);
-
-                    // Calculate and store the eec weight
-                    eec_reco[count_dr_reco] = pow(ipt*jpt, n);
-                    
-                    //add one entry to the eec and dr arrays
-                    count_dr_reco += 1;
-
-                }
-            }              
-
-            //set the length of the eec and dr arrays
-            ndr_reco = count_dr_reco;
-
-            //Do the non-matched pairs
-
-            // Set the new nr of tracks and keep record of the number of entries for dr
-            Int_t n_tracks_reco_tot = trackVectors_notmatched.size(); 
-            Int_t count_dr_reco_tot = count_dr_reco;
-
-            // Match non-matched tracks within themselves
-            for (Int_t i = 0; i < n_tracks_reco_tot; i++) { 
-                
-                Float_t etai = trackVectors_notmatched[i].Eta();
-                Float_t phii = trackVectors_notmatched[i].Phi();
-                Float_t ipt = trackVectors_notmatched[i].Pt();
-
-                if(ipt < 1) continue;
-
-
-                // Loop over pairs
-                for(Int_t j=0; j < i; j++){
-                    
-                    Float_t etaj = trackVectors_notmatched[j].Eta();
-                    Float_t phij = trackVectors_notmatched[j].Phi();
-                    Float_t jpt = trackVectors_notmatched[j].Pt();
-
-                    if(jpt < 1) continue;
-                    
-                    
-                    // Calculate and store the dr
-                    dr_reco[count_dr_reco_tot] = t.calc_dr(etai, phii, etaj, phij);
-
-                    // Calculate and store the eec weight
-                    eec_reco[count_dr_reco_tot] = pow(ipt*jpt, n);
-
-                    count_dr_reco_tot += 1;
-                }
-            } 
-
-            // Pair matched with non-matched tracks
-            for (Int_t i = 0; i < n_tracks_reco_tot; i++) { 
-                
-                Float_t etai = trackVectors_notmatched[i].Eta();
-                Float_t phii = trackVectors_notmatched[i].Phi();
-                Float_t ipt = trackVectors_notmatched[i].Pt();
-
-                if(ipt < 1) continue;
-
-                // Loop over pairs
-                for(Int_t j=0; j < n_tracks; j++){
-                    
-                    Float_t etaj = trackVectors[j].Eta();
-                    Float_t phij = trackVectors[j].Phi();
-                    Float_t jpt = trackVectors[j].Pt();
-
-                    if(jpt < 1) continue;
-                    
-                    // Calculate and store the dr
-                    dr_reco[count_dr_reco_tot] = t.calc_dr(etai, phii, etaj, phij);
-
-                    // Calculate and store the eec weight
-                    eec_reco[count_dr_reco_tot] = pow(ipt*jpt, n);
-
-                    count_dr_reco_tot += 1;
-                }
-            } 
-
-            ndr_reco_tot = count_dr_reco_tot;
+	  //set the length of the eec and dr arrays
+	  ndr_reco = count_dr_reco;
+	  
+	  //Do the non-matched pairs
+	  
+	  // Set the new nr of tracks and keep record of the number of entries for dr
+	  Int_t n_tracks_reco_tot = trackVectors_notmatched.size(); 
+	  Int_t count_dr_reco_tot = count_dr_reco;
+	  
+	  // Match non-matched tracks within themselves
+	  for (Int_t i = 0; i < n_tracks_reco_tot; i++) { 
+	    
+	    Float_t etai = trackVectors_notmatched[i].Eta();
+	    Float_t phii = trackVectors_notmatched[i].Phi();
+	    Float_t ipt = trackVectors_notmatched[i].Pt();
 
 
             //Fill the tree entry
@@ -962,22 +944,12 @@ void create_trees_eec(){
     //apply b-tagging
     bool btag = false;
 
-    //Aggregate tracks coming from B hadrons
-    bool aggregated = false;
+    TString folder = "$mydata/test_for_code_mods/run_with_mod_code/trees/";
 
     //Create cuts and labels
     std::vector<Int_t> cuts_vec{4};//, 2, 3, 4};
     std::vector<TString> labels_vec{"inclusive"};//,"moreb", "other","mc"};
     
-
-    //Loop over datasets
-    for(Int_t i = 0; i < filenames.size(); i++){
-
-        //Create the eec trees
-        for(Int_t j = 0; j < cuts_vec.size(); j++){
-            do_trees(filenames.at(i), datasets.at(i), labels_vec.at(j), folder, n, pT_low, pT_high, aggregated, cuts_vec.at(j),  btag, matching);
-            }
-
-    
-    }
+    //Create the eec trees
+    do_trees(filename, dataType, label, folder, n, pT_low, pT_high, aggregated, btag, matching, beg_event, end_event, output_name);
 }
