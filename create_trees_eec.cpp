@@ -1,4 +1,3 @@
-
 //Creates a tree where the information on jets and the dr and eec are store in separate arrays to
 //build the response matrix (works for all dimensions of the unfolding)
 #include "tTree.h"
@@ -244,8 +243,8 @@ void create_trackVectors_reco(std::vector<ROOT::Math::PtEtaPhiMVector>& trackVec
         }
         if(std::abs(t.trkPdgId[itrk])==11){
             v1.SetM(0.000510);
-        } 
-       if(std::abs(t.trkPdgId[itrk])==2212){
+        }
+        if(std::abs(t.trkPdgId[itrk])==2212){
             v1.SetM(0.938272);
         }
         if(std::abs(t.trkPdgId[itrk])==321){
@@ -484,6 +483,7 @@ void match_tracks(std::vector<ROOT::Math::PtEtaPhiMVector>& trackVectors_reco_re
 }
 
 //Create trees storing informations on 2-point EEC to build the response matrix
+void do_trees(TString &filename,  TString &dataset, TString &label, TString &folder, Int_t &n, Float_t &pT_low, Float_t &pT_high, bool &aggregated, Int_t &cuts, bool &btag, bool &matching){
 void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &folder, Int_t &n, Float_t &pT_low, Float_t &pT_high, bool &aggregated, bool &btag, bool &matching, Int_t &beg_event, Int_t &end_event, const char* output_name){
 
   bool isMC = true;
@@ -491,9 +491,7 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
   }
 
     TString fin_name = filename;//
-    //tTree t(fin_name);
-    tTree t;
-    t.Init(fin_name, isMC);
+    tTree t(fin_name);
 
     //Create the fout name depending on the selection
     TString fout_name = "trees_nocuts_";
@@ -503,18 +501,19 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     if(aggregated) fout_name += "aggr_BDT_";
     else fout_name += "noaggr_";
 
-    if(!btag) fout_name += "notag_"; 
+    if(!btag) label += "_notag"; 
 
     fout_name += TString(Form("n%i_",n))  + label + "_" + TString(Form("%i_%i",int(pT_low), int(pT_high)))+ "_" + output_name ;
 
 
     //Create output file and tree to store all the values
     TFile *fout = new TFile(folder+fout_name, "recreate");
-    TTree *tree = new TTree("tree",   "tree_all_jets");
-   
+    TTree *tree = new TTree("tree", "tree");
+
+    
     //Define branches variables
     Int_t ndr_reco, ndr_gen,
-      ndr_reco_tot, ndr_gen_tot;
+          ndr_reco_tot, ndr_gen_tot;
     
 
     //for inclusive/large samples you might need to increase the array size if the code misteriously crashes
@@ -524,11 +523,9 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
 
     Double_t jpt_reco, jpt_gen, weight,
              jt_eta_reco, jt_eta_gen,
-      discr, pthat, jtHadFlav, jtNbHad;
+             discr, pthat;
     
     //Set branches
-
-   
     //weight of the event
     tree->Branch("weight", &weight, "weight/D");
     //Number of matched dr and eec calculated (after all the cuts)
@@ -556,13 +553,7 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     tree->Branch("eec_reco", eec_reco, "eec_reco[4000]/F");
     tree->Branch("eec_gen", eec_gen, "eec_gen[4000]/F");
 
-    tree->Branch("jtHadFlav", &jtHadFlav, "jtHadFlav/I");
-    tree->Branch("jtNbHad", &jtNbHad, "jtNbHad/I");
-    
-    
 
-    
-    
     // Turn off all branches and turn on only the interesting ones
     // Attention! If a branch is off, it will return bs without crashing 
     t.SetBranchStatus("*", 0);
@@ -571,7 +562,7 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
         "refpt", "refeta", "refphi", "nref",
         "nrefTrk", "refTrkPt", "refTrkJetId",
         "refTrkEta", "refTrkPhi", "refTrkPdgId", "refTrkSta", "refTrkMass",
-        "jtpt", "jteta", "jtphi", "jtm", "nref", "jtmB", "genpt",
+        "jtpt", "jteta", "jtphi", "jtm", "nref", "jtmB", "genPt",
         "ntrk", "trkPt", "trkJetId",
         "trkMatchSta", "refTrkSta",
         "trkEta", "trkPhi", "jtNbHad", "jtHadFlav", "discr_particleNet_BvsAll", "trkBdtScore", "trkPdgId",
@@ -582,7 +573,8 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     //Prescale value (only for events passing a 40 GeV trigger)
     double prescale_pf40 = 33.917210;
 
-    std::cout << "Dataset = " << dataType << std::endl;
+    std::cout << "Dataset = " << dataset << std::endl;
+    std::cout << "Selection = " << label << std::endl;
     std::cout << "Events = " << t.GetEntries() << std::endl;
 
     //For checks on the track efficiency of the matching
@@ -595,24 +587,14 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     Double_t tot_gen_matched_tracks_used = 0;
     Double_t tot_reco_matched_tracks_used = 0;
 
-
     //looping over events
 
     int maxEvents = end_event; //t.GetEntries();     
     std::cout << "Looping over events" << std::endl;
     for (Long64_t ient = beg_event; ient<maxEvents && ient <= end_event; ient++) { // 
  
-	int mult = maxEvents/10;
-	double percentage = round(ient * 100 / maxEvents);
-	// Print progress                                                                                                                                                        
-	if (ient % mult == 0) {                                                                                                                                                  
-	  std::cout << "entry nb = " << ient << std::endl;                                                                                       
-	  std::cout << percentage << "%" << std::endl;
-	}          
+        t.GetEntry(ient); 
 
-
-	t.GetEntry(ient); 
-	
         //get the nr of tracks
         Int_t n_tracks = t.ntrk;
         Int_t n_tracks_gen = t.nrefTrk;
@@ -631,6 +613,66 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
         // Loop over jets for reco
         for (Int_t ijet = 0; ijet < t.nref; ijet++) {
 
+            bool skip = false;
+
+            // Select jet flavour and/or select on the number of b hadrons
+            switch(cuts){
+            //b-jet with one b hadron
+            case 1: 
+            if (t.jtHadFlav[ijet] < 5) skip = true;
+            if (t.jtNbHad[ijet] != 1) skip = true;
+            break;
+            //b-jet with more than 1 b hadron
+            case 2:
+            if (t.jtHadFlav[ijet] < 5) skip = true;
+            if (t.jtNbHad[ijet] < 2) skip = true;
+            break;
+            //non-b jets
+            case 3:
+            if (std::abs(t.jtHadFlav[ijet]) == 5) skip = true;
+            break;
+            //no flavour selection
+            case 4:
+            skip = false;
+            break;
+            //c-jets
+            case 5:
+            if(std::abs(t.jtHadFlav[ijet]) != 4) skip = true;
+            break;
+            //light (non-b non-c) jets
+            case 6:
+            if(std::abs(t.jtHadFlav[ijet]) >= 4) skip = true;
+            break;
+            }
+
+            if (skip) continue;
+
+            
+            //Save jet information
+            jt_eta_gen = t.refeta[ijet];
+            jt_eta_reco = t.jteta[ijet];
+            jpt_gen = t.refpt[ijet];
+            jpt_reco = t.jtpt[ijet];
+            discr = t.discr_particleNet_BvsAll[ijet];
+
+
+            //Select and build the track vectors
+
+            //create a track vector for the i jet at GEN
+            std::vector<ROOT::Math::PtEtaPhiMVector> trackVectors_gen;
+            std::vector<ROOT::Math::PtEtaPhiMVector> trackVectors_gen_notmatched;
+
+
+            //create a track vector for the i jet at RECO
+            std::vector<ROOT::Math::PtEtaPhiMVector> trackVectors;
+            std::vector<ROOT::Math::PtEtaPhiMVector> trackVectors_notmatched;
+
+            //Aggregate and match tracks
+            
+            // Aggregate 1 b hadron gen, get mB
+            if (aggregated) mB_gen = ReconstuctSingleB_gen(trackVectors_gen, t, ijet);
+            else{
+                create_trackVectors_gen(trackVectors_gen, t, ijet);
 	  jtHadFlav = t.jtHadFlav[ijet];
 	  jtNbHad = t.jtNbHad[ijet];
 	  	  
@@ -857,133 +899,56 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
 	    Float_t phii = trackVectors_notmatched[i].Phi();
 	    Float_t ipt = trackVectors_notmatched[i].Pt();
 
-	    if(ipt < 1) continue;
-	    
-	    
-	    // Loop over pairs
-	    for(Int_t j=0; j < i; j++){
-	      
-	      Float_t etaj = trackVectors_notmatched[j].Eta();
-	      Float_t phij = trackVectors_notmatched[j].Phi();
-	      Float_t jpt = trackVectors_notmatched[j].Pt();
-	      
-	      if(jpt < 1) continue;
-              
-              
-	      // Calculate and store the dr
-	      dr_reco[count_dr_reco_tot] = t.calc_dr(etai, phii, etaj, phij);
-	      
-	      // Calculate and store the eec weight
-	      eec_reco[count_dr_reco_tot] = pow(ipt*jpt, n);
-	      
-	      count_dr_reco_tot += 1;
-	    }
-	  } 
-	  
-	  // Pair matched with non-matched tracks
-	  for (Int_t i = 0; i < n_tracks_reco_tot; i++) { 
-	    
-	    Float_t etai = trackVectors_notmatched[i].Eta();
-	    Float_t phii = trackVectors_notmatched[i].Phi();
-	    Float_t ipt = trackVectors_notmatched[i].Pt();
-	    
-	    if(ipt < 1) continue;
-	    
-	    // Loop over pairs
-	    for(Int_t j=0; j < n_tracks; j++){
-	      
-	      Float_t etaj = trackVectors[j].Eta();
-	      Float_t phij = trackVectors[j].Phi();
-	      Float_t jpt = trackVectors[j].Pt();
-	      
-	      if(jpt < 1) continue;
-              
-	      // Calculate and store the dr
-	      dr_reco[count_dr_reco_tot] = t.calc_dr(etai, phii, etaj, phij);
-	      
-	      // Calculate and store the eec weight
-	      eec_reco[count_dr_reco_tot] = pow(ipt*jpt, n);
-	      
-	      count_dr_reco_tot += 1;
-	    }
-	  } 
-	  
-	  ndr_reco_tot = count_dr_reco_tot;
-	  
-	  
-	  
-	  //Fill the tree entry
-	  tree->Fill();
-	  
-	}
+
+            //Fill the tree entry
+            tree->Fill();
+        }
+        
     }
-    
-    fout->Close();
-    
-    //Print matching efficiency
-    std::cout << "Tot gen tracks = " << tot_gen_tracks << std::endl;
-    std::cout << "Tot reco tracks = " << tot_reco_tracks << std::endl;
-    std::cout << "Tot gen matched tracks = " << tot_gen_matched_tracks << std::endl;
-    std::cout << "Tot reco matched tracks = " << tot_reco_matched_tracks << std::endl;
-    std::cout << "Tot gen matched tracks used for pairs = " << tot_gen_matched_tracks_used << std::endl;
-    std::cout << "Tot reco matched tracks used for pairs = " << tot_reco_matched_tracks_used << std::endl;
-    std::cout << "---------------------" << std::endl;
-    std::cout << "Gen matched tracks = " << tot_gen_matched_tracks/tot_gen_tracks * 100 << "%" << std::endl;
-    std::cout << "Reco matched tracks = " << tot_reco_matched_tracks/tot_reco_tracks * 100 << "%" << std::endl;
-    
-}
 
-void create_trees_eec(int dataType = 1,                                                                                                                                 
-		      //-1 for data Low //0 for data High //1 for MC - bjet //2 for MC - dijet //3 for bjet_herwig                                                                          
-		      Float_t pT_low = 80,                                                                                                                              
-		      Float_t pT_high = 140,                                                                                                                            
-		      Int_t n=1,                                                                                                                                        
-		      Int_t beg_event = 0,
-		      Int_t end_event = 1,
+tree->Write();
 
-		      bool btag = false,
-		      bool aggregated = false,
-		      bool matching = true,
-		      const char* output_name = "job"){
+fout->Close();
 
-  gSystem->Load("libPhysics");
-  gSystem->Load("libGenVector");
-
-  TString filename;
-  TString label;
-  TFile* fOut = TFile::Open(output_name, "RECREATE");
-  if(dataType == 1){
-    filename = "/data_CMS/cms/kalipoliti/qcdMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root";
-    label = "bjet";
-}
-
-  else if(dataType == 2){
-    filename = "/data_CMS/cms/kalipoliti/qcdMC/dijet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root";
-    label = "dijet";
+//Print matching efficiency
+std::cout << "Tot gen tracks = " << tot_gen_tracks << std::endl;
+std::cout << "Tot reco tracks = " << tot_reco_tracks << std::endl;
+std::cout << "Tot gen matched tracks = " << tot_gen_matched_tracks << std::endl;
+std::cout << "Tot reco matched tracks = " << tot_reco_matched_tracks << std::endl;
+std::cout << "Tot gen matched tracks used for pairs = " << tot_gen_matched_tracks_used << std::endl;
+std::cout << "Tot reco matched tracks used for pairs = " << tot_reco_matched_tracks_used << std::endl;
+std::cout << "---------------------" << std::endl;
+std::cout << "Gen matched tracks = " << tot_gen_matched_tracks/tot_gen_tracks * 100 << "%" << std::endl;
+std::cout << "Reco matched tracks = " << tot_reco_matched_tracks/tot_reco_tracks * 100 << "%" << std::endl;
 
 }
-  else if(dataType == 3){
-    filename = "/data_CMS/cms/kalipoliti/herwigMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root";
-    label = "bjet_herwig";
-  }
 
-  else{std::cout << "error: data was chosen!!" << endl;
-    return;
-  } 
-
-
+void create_trees_eec(){
     // ____________________MC______________________________________________
     //Get ntuples from dataset (Herwig dataset for systematic uncertainty estimation)
-  //    std::vector<TString> filenames{"/data_CMS/cms/kalipoliti/qcdMC/dijet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"};
-//"/data_CMS/cms/kalipoliti/qcdMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"};
-//, "/data_CMS/cms/kalipoliti/herwigMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"};//
-  //std::vector<TString> datasets{"dijet"};//"bjet"};//, "bjet_herwig"};//
+    std::vector<TString> filenames{"/data_CMS/cms/kalipoliti/qcdMC/dijet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"};//"/data_CMS/cms/kalipoliti/qcdMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"};//, "/data_CMS/cms/kalipoliti/herwigMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"};//
+    std::vector<TString> datasets{"dijet"};//"bjet"};//, "bjet_herwig"};//
 
-    TString folder = "/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/trees/";
+    TString folder = "/data_CMS/cms/meuli/bigrerun/";
+    
+    //Select jet pT
+    Float_t pT_low = 80;
+    Float_t pT_high = 140;
+
+    //energy weight exponent
+    Int_t n = 1;
+
+    //match tracks
+    bool matching = true;
+
+    //apply b-tagging
+    bool btag = false;
+
+    TString folder = "$mydata/test_for_code_mods/run_with_mod_code/trees/";
 
     //Create cuts and labels
-    //    std::vector<Int_t> cuts_vec{4};//, 2, 3, 4};
-    //std::vector<TString> labels_vec{"inclusive"};//,"moreb", "other","mc"};
+    std::vector<Int_t> cuts_vec{4};//, 2, 3, 4};
+    std::vector<TString> labels_vec{"inclusive"};//,"moreb", "other","mc"};
     
     //Create the eec trees
     do_trees(filename, dataType, label, folder, n, pT_low, pT_high, aggregated, btag, matching, beg_event, end_event, output_name);
