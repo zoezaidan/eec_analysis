@@ -67,8 +67,9 @@ for job_id in range(n_jobs):
         fsh.write('echo "Running on $(hostname)"\n\n')
 
         # Setup environment
-        fsh.write("source /opt/exp_soft/llr/root/v6.18.04-el7-py27-gcc8X/bin/thisroot.sh\n") 
-        #fsh.write("cd /home/llr/cms/zaidan/CMSSW_10_6_48/src/EEC_Zoe/\n")
+        #fsh.write("source /opt/exp_soft/llr/root/v6.18.04-el7-py27-gcc8X/bin/thisroot.sh\n") 
+        fsh.write("source /opt/exp_soft/llr/root/v6.32-el9-gcc14xx-py3918/bin/thisroot.sh\n") 
+        #fsh.write("~/eec_analysis\n")
         #fsh.write("eval `cmsenv`\n\n")
 
         # ROOT macro call
