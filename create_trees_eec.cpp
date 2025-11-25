@@ -517,24 +517,19 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     TTree *tree = new TTree("tree",   "tree_all_jets");
    
     //Define branches variables
-    Int_t ndr_reco, ndr_gen,
-      ndr_reco_tot, ndr_gen_tot;
+    Int_t ndr_reco, ndr_gen, ndr_reco_tot, ndr_gen_tot;
     
 
     //for inclusive/large samples you might need to increase the array size if the code misteriously crashes
-    Float_t eec_reco[4000], eec_gen[4000],
-            dr_reco[4000], dr_gen[4000],
-            mB_reco, mB_gen;
-
-    Double_t jpt_reco, jpt_gen, weight,
-             jt_eta_reco, jt_eta_gen,
-      discr, pthat, jtHadFlav, jtNbHad;
+    Float_t eec_reco[4000], eec_gen[4000], dr_reco[4000], dr_gen[4000];    
+    Float_t jpt_reco, jpt_gen, weight,jt_eta_reco, jt_eta_gen, discr, pthat, mB_reco, mB_gen;
+    Int_t jtHadFlav, jtNbHad;
     
     //Set branches
 
    
     //weight of the event
-    tree->Branch("weight", &weight, "weight/D");
+    tree->Branch("weight", &weight, "weight/F");
     //Number of matched dr and eec calculated (after all the cuts)
     tree->Branch("ndr_reco", &ndr_reco, "ndr_reco/I");
     tree->Branch("ndr_gen", &ndr_gen, "ndr_gen/I");
@@ -542,23 +537,23 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     tree->Branch("ndr_reco_tot", &ndr_reco_tot, "ndr_reco_tot/I");
     tree->Branch("ndr_gen_tot", &ndr_gen_tot, "ndr_gen_tot/I");
     //jet pt
-    tree->Branch("jpt_reco", &jpt_reco, "jpt_reco/D");
-    tree->Branch("jpt_gen", &jpt_gen, "jpt_gen/D");
+    tree->Branch("jpt_reco", &jpt_reco, "jpt_reco/F");
+    tree->Branch("jpt_gen", &jpt_gen, "jpt_gen/F");
     //mb
     tree->Branch("mB_reco", &mB_reco, "mB_reco/F");
     tree->Branch("mB_gen", &mB_gen, "mB_gen/F");
     //jet eta
-    tree->Branch("jt_eta_reco", &jt_eta_reco, "jt_eta_reco/D");
-    tree->Branch("jt_eta_gen", &jt_eta_gen, "jt_eta_gen/D");
+    tree->Branch("jt_eta_reco", &jt_eta_reco, "jt_eta_reco/F");
+    tree->Branch("jt_eta_gen", &jt_eta_gen, "jt_eta_gen/F");
     //btag
-    tree->Branch("discr", &discr, "discr/D");
-    tree->Branch("pthat", &pthat, "pthat/D");
+    tree->Branch("discr", &discr, "discr/F");
+    tree->Branch("pthat", &pthat, "pthat/F");
     //dr array
-    tree->Branch("dr_reco", dr_reco, "dr_reco[4000]/F");
-    tree->Branch("dr_gen", dr_gen, "dr_gen[4000]/F");
+    tree->Branch("dr_reco", dr_reco, "dr_reco[ndr_reco]/F");
+    tree->Branch("dr_gen", dr_gen, "dr_gen[ndr_gen]/F");
     //eec array
-    tree->Branch("eec_reco", eec_reco, "eec_reco[4000]/F");
-    tree->Branch("eec_gen", eec_gen, "eec_gen[4000]/F");
+    tree->Branch("eec_reco", eec_reco, "eec_reco[ndr_reco]/F");
+    tree->Branch("eec_gen", eec_gen, "eec_gen[ndr_gen]/F");
 
     tree->Branch("jtHadFlav", &jtHadFlav, "jtHadFlav/I");
     tree->Branch("jtNbHad", &jtNbHad, "jtNbHad/I");
@@ -590,14 +585,14 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     std::cout << "Events = " << t.GetEntries() << std::endl;
 
     //For checks on the track efficiency of the matching
-    Double_t tot_gen_tracks = 0;
-    Double_t tot_reco_tracks = 0;
+    Int_t tot_gen_tracks = 0;
+    Int_t tot_reco_tracks = 0;
     
-    Double_t tot_gen_matched_tracks = 0;
-    Double_t tot_reco_matched_tracks = 0;
+    Int_t tot_gen_matched_tracks = 0;
+    Int_t tot_reco_matched_tracks = 0;
 
-    Double_t tot_gen_matched_tracks_used = 0;
-    Double_t tot_reco_matched_tracks_used = 0;
+    Int_t tot_gen_matched_tracks_used = 0;
+    Int_t tot_reco_matched_tracks_used = 0;
 
 
     //looping over events
@@ -866,9 +861,9 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
 	 
 	 
 	  
-	    }
+	  }
+	}
     }
-    
     tree->Write();
     fout->Close();
     
@@ -885,8 +880,7 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     
 }
 
-void create_trees_eec(int dataType = 1,                                                                                                                                 
-		      //-1 for data Low //0 for data High //1 for MC - bjet //2 for MC - dijet //3 for bjet_herwig                                                                          
+void create_trees_eec(int dataType = 1,                                                                                                                               //-1 for data Low //0 for data High //1 for MC - bjet //2 for MC - dijet //3 for bjet_herwig                                                                          
 		      Float_t pT_low = 80,                                                                                                                              
 		      Float_t pT_high = 140,                                                                                                                            
 		      Int_t n=1,                                                                                                                                        
@@ -896,11 +890,11 @@ void create_trees_eec(int dataType = 1,
 		      bool btag = true,
 		      bool aggregated = true,
 		      bool matching = true,
-		      const char* output_suffix = ".root"){
-
+		      const char* output_suffix = ".root")
+{
   gSystem->Load("libPhysics");
   gSystem->Load("libGenVector");
-
+  
   TString filename;
   TString label;
 
