@@ -2,6 +2,9 @@
 //Creates a tree where the information on jets and the dr and eec are store in separate arrays to
 //build the response matrix (works for all dimensions of the unfolding)
 #include "tTree.h"
+#include "TH3.h"
+#include "TSystem.h"
+#include "TString.h"
 #include "binning_histos.h"
 #include "Math/GenVector/VectorUtil.h"
 #pragma cling load("libGenVector.so")
@@ -17,7 +20,7 @@ bool skipMC(double jtpt, double pthat) {//double refpt
 
 // Prints a vector of Int_t (for debugging)
 void print_vector(std::vector<Int_t> &vec){
-    for(Int_t i = 0; i < vec.size(); i++){
+  for(Int_t i = 0; i < (Int_t) vec.size(); i++){
         std::cout << vec.at(i) << " ";
     }
     std::cout << std::endl;
@@ -25,7 +28,7 @@ void print_vector(std::vector<Int_t> &vec){
 
 // Prints a vector of Float_t (for debugging)
 void print_vector_float(std::vector<Float_t> &vec){
-    for(Int_t i = 0; i < vec.size(); i++){
+  for(Int_t i = 0; i < (Int_t) vec.size(); i++){
         std::cout << vec.at(i) << " ";
     }
     std::cout << std::endl;
@@ -46,7 +49,7 @@ void print_matrix(std::vector<std::vector<Float_t>> &v, Int_t &ncols, Int_t &nro
 // Checks if a Lorentz vector is included into the track vectors for aggregation
 bool check_inclusion(std::vector<ROOT::Math::PtEtaPhiMVector>& trackVectors, ROOT::Math::PtEtaPhiMVector &v1){
     bool included = false;
-    for (Int_t i = 0; i < trackVectors.size(); i++){
+    for (Int_t i = 0; i < (Int_t) trackVectors.size(); i++){
         if (trackVectors[i]==v1){
             included=true;
             break;
@@ -485,7 +488,7 @@ void match_tracks(std::vector<ROOT::Math::PtEtaPhiMVector>& trackVectors_reco_re
 }
 
 //Create trees storing informations on 2-point EEC to build the response matrix
-void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &folder, Int_t &n, Float_t &pT_low, Float_t &pT_high, bool &aggregated, bool &btag, bool &matching, Int_t &beg_event, Int_t &end_event, const char* output_name){
+void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &folder, Int_t &n, Float_t &pT_low, Float_t &pT_high, bool &aggregated, bool &btag, bool &matching, Int_t &beg_event, Int_t &end_event, const char* output_suffix){
 
   bool isMC = true;
   if(dataType <= 0) {isMC = false;
@@ -505,9 +508,9 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     else fout_name += "noaggr_";
 
     if(!btag) fout_name += "notag_"; 
-
-    fout_name += TString(Form("n%i_",n))  + label + "_" + TString(Form("%i_%i",int(pT_low), int(pT_high)))+ "_" + output_name ;
-
+    
+    fout_name += TString(Form("n%i_",n))  + label + "_" + TString(Form("%i_%i",int(pT_low), int(pT_high)))+ output_suffix ;
+    
 
     //Create output file and tree to store all the values
     TFile *fout = new TFile(folder+fout_name, "recreate");
@@ -893,14 +896,14 @@ void create_trees_eec(int dataType = 1,
 		      bool btag = true,
 		      bool aggregated = true,
 		      bool matching = true,
-		      const char* output_name = "job"){
+		      const char* output_suffix = ".root"){
 
   gSystem->Load("libPhysics");
   gSystem->Load("libGenVector");
 
   TString filename;
   TString label;
-  TFile* fOut = TFile::Open(output_name, "RECREATE");
+
   if(dataType == 1){
     filename = "/data_CMS/cms/kalipoliti/qcdMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root";
     label = "bjet";
@@ -935,5 +938,5 @@ void create_trees_eec(int dataType = 1,
     //std::vector<TString> labels_vec{"inclusive"};//,"moreb", "other","mc"};
     
     //Create the eec trees
-    do_trees(filename, dataType, label, folder, n, pT_low, pT_high, aggregated, btag, matching, beg_event, end_event, output_name);
+    do_trees(filename, dataType, label, folder, n, pT_low, pT_high, aggregated, btag, matching, beg_event, end_event, output_suffix);
 }

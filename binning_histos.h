@@ -1,3 +1,4 @@
+#include "TH2.h"
 // Define binnings
 
 //dr

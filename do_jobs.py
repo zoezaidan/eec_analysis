@@ -73,7 +73,7 @@ for job_id in range(n_jobs):
         # ROOT macro call
         # Note: escaping quotes for shell
         macro_call = (
-            'root -b -q "%s(%d, %d, %d, %d, %d, %d, %s, %s, %s, \\"job_%d.root\\")"\n'
+            'root -b -q "%s(%d, %d, %d, %d, %d, %d, %s, %s, %s, \\"_%d.root\\")"\n'
             % (
                 macro_name,
                 dataType,
