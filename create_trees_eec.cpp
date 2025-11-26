@@ -622,41 +622,6 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
         for (Int_t ijet = 0; ijet < t.nref; ijet++) {
             jtHadFlav = t.jtHadFlav[ijet];
             jtNbHad = t.jtNbHad[ijet];
-/*
-            bool skip = false;
-
-            // Select jet flavour and/or select on the number of b hadrons
-            switch(cuts){
-            //b-jet with one b hadron
-            case 1: 
-            if (t.jtHadFlav[ijet] < 5) skip = true;
-            if (t.jtNbHad[ijet] != 1) skip = true;
-            break;
-            //b-jet with more than 1 b hadron
-            case 2:
-            if (t.jtHadFlav[ijet] < 5) skip = true;
-            if (t.jtNbHad[ijet] < 2) skip = true;
-            break;
-            //non-b jets
-            case 3:
-            if (std::abs(t.jtHadFlav[ijet]) == 5) skip = true;
-            break;
-            //no flavour selection
-            case 4:
-            skip = false;
-            break;
-            //c-jets
-            case 5:
-            if(std::abs(t.jtHadFlav[ijet]) != 4) skip = true;
-            break;
-            //light (non-b non-c) jets
-            case 6:
-            if(std::abs(t.jtHadFlav[ijet]) >= 4) skip = true;
-            break;
-            }
-
-            if (skip) continue;
-*/
             
             //Save jet information
             jt_eta_gen = t.refeta[ijet];
@@ -998,13 +963,9 @@ void create_trees_eec(int dataType = 1,                                         
     return;
   } 
 
-    //Create cuts and labels
-    //std::vector<Int_t> cuts_vec{4};//, 2, 3, 4};
-    label += "_inclusive";//,"moreb", "other","mc"};
+   label += "_inclusive";//,"moreb", "other","mc"};
     
 
-    //Create the eec trees
-    //for(Int_t j = 0; j < cuts_vec.size(); j++){
-        do_trees(filename, dataType, label, folder, n, pT_low, pT_high, aggregated, btag, matching, beg_event, end_event, output_suffix);
+    do_trees(filename, dataType, label, folder, n, pT_low, pT_high, aggregated, btag, matching, beg_event, end_event, output_suffix);
         }
-    //}
+  
