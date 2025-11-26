@@ -18,7 +18,7 @@ bool skipMC(double jtpt, double pthat) {//double refpt
 
 // Prints a vector of Int_t (for debugging)
 void print_vector(std::vector<Int_t> &vec){
-    for(Int_t i = 0; i < vec.size(); i++){
+    for(Int_t i = 0; i < (Int_t) vec.size(); i++){
         std::cout << vec.at(i) << " ";
     }
     std::cout << std::endl;
@@ -26,7 +26,7 @@ void print_vector(std::vector<Int_t> &vec){
 
 // Prints a vector of Float_t (for debugging)
 void print_vector_float(std::vector<Float_t> &vec){
-    for(Int_t i = 0; i < vec.size(); i++){
+    for(Int_t i = 0; i < (Int_t) vec.size(); i++){
         std::cout << vec.at(i) << " ";
     }
     std::cout << std::endl;
@@ -47,7 +47,7 @@ void print_matrix(std::vector<std::vector<Float_t>> &v, Int_t &ncols, Int_t &nro
 // Checks if a Lorentz vector is included into the track vectors for aggregation
 bool check_inclusion(std::vector<ROOT::Math::PtEtaPhiMVector>& trackVectors, ROOT::Math::PtEtaPhiMVector &v1){
     bool included = false;
-    for (Int_t i = 0; i < trackVectors.size(); i++){
+    for (Int_t i = 0; i < (Int_t) trackVectors.size(); i++){
         if (trackVectors[i]==v1){
             included=true;
             break;
@@ -486,12 +486,12 @@ void match_tracks(std::vector<ROOT::Math::PtEtaPhiMVector>& trackVectors_reco_re
 }
 
 //Create trees storing informations on 2-point EEC to build the response matrix
-void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &folder, Int_t &n, Float_t &pT_low, Float_t &pT_high, bool &aggregated, Int_t &cuts, bool &btag, bool &matching, Int_t &beg_event, Int_t &end_event, const char* output_suffix){
+void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &folder, Int_t &n, Float_t &pT_low, Float_t &pT_high, bool &aggregated,  bool &btag, bool &matching, Int_t &beg_event, Int_t &end_event, const char* output_suffix){
 
 
     bool isMC = true;
-  if(dataType <= 0) {isMC = false;
-  }
+    if(dataType <= 0) {isMC = false;
+    }
     TString fin_name = filename;//
     
     tTree t;
@@ -504,11 +504,9 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
 
     if(aggregated) fout_name += "aggr_BDT_";
     else fout_name += "noaggr_";
-
     if(!btag) label += "_notag"; 
 
     fout_name += TString(Form("n%i_",n))  + label + "_" + TString(Form("%i_%i",int(pT_low), int(pT_high)))+ output_suffix ;
-    
 
     //Create output file and tree to store all the values
     TFile *fout = new TFile(folder+fout_name, "recreate");
@@ -522,6 +520,8 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     Float_t eec_reco[4000], eec_gen[4000], dr_reco[4000], dr_gen[4000];
             
     Float_t jpt_reco, jpt_gen, weight,jt_eta_reco, jt_eta_gen, discr, pthat, mB_reco, mB_gen;
+
+    Int_t jtHadFlav, jtNbHad;
 
     //Set branches
     //weight of the event
@@ -550,6 +550,9 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     //eec array
     tree->Branch("eec_reco", eec_reco, "eec_reco[ndr_reco_tot]/F");
     tree->Branch("eec_gen", eec_gen, "eec_gen[ndr_gen_tot]/F");
+    //jet flavour and number of b hadrons
+    tree->Branch("jtHadFlav", &jtHadFlav, "jtHadFlav/I");
+    tree->Branch("jtNbHad", &jtNbHad, "jtNbHad/I");
 
 
     // Turn off all branches and turn on only the interesting ones
@@ -585,16 +588,13 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
     Int_t tot_gen_matched_tracks_used = 0;
     Int_t tot_reco_matched_tracks_used = 0;
 
-
-    int maxEvents = 1000; //t.GetEntries();  
-
     //looping over events
     std::cout << "Looping over events" << std::endl;
-    for (Long64_t ient = beg_event; ient<maxEvents && ient <= end_event; ient++) { // 
+    for (Long64_t ient = beg_event; ient <= end_event; ient++) { // 
         // Print progress
 
-        int mult = maxEvents/10;
-	    double percentage = round(ient * 100 / maxEvents);
+        int mult = end_event/10;
+	    double percentage = round(ient * 100 / end_event);
 	    // Print progress                                                                                                                                                        
 	    if (ient % mult == 0) {                                                                                                                                                  
 	    std::cout << "entry nb = " << ient << std::endl;                                                                                       
@@ -620,7 +620,9 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
 
         // Loop over jets for reco
         for (Int_t ijet = 0; ijet < t.nref; ijet++) {
-
+            jtHadFlav = t.jtHadFlav[ijet];
+            jtNbHad = t.jtNbHad[ijet];
+/*
             bool skip = false;
 
             // Select jet flavour and/or select on the number of b hadrons
@@ -654,7 +656,7 @@ void do_trees(TString &filename,  Int_t &dataType, TString &label, TString &fold
             }
 
             if (skip) continue;
-
+*/
             
             //Save jet information
             jt_eta_gen = t.refeta[ijet];
@@ -964,7 +966,7 @@ void create_trees_eec(int dataType = 1,                                         
 		      Float_t pT_high = 140,                                                                                                                            
 		      Int_t n=1,                                                                                                                                        
 		      Int_t beg_event = 0,
-		      Int_t end_event = 10000,
+		      Int_t end_event = 1000,
 
 		      bool btag = false,
 		      bool aggregated = false,
@@ -997,12 +999,12 @@ void create_trees_eec(int dataType = 1,                                         
   } 
 
     //Create cuts and labels
-    std::vector<Int_t> cuts_vec{4};//, 2, 3, 4};
+    //std::vector<Int_t> cuts_vec{4};//, 2, 3, 4};
     label += "_inclusive";//,"moreb", "other","mc"};
     
 
     //Create the eec trees
-    for(Int_t j = 0; j < cuts_vec.size(); j++){
-        do_trees(filename, dataType, label, folder, n, pT_low, pT_high, aggregated, cuts_vec.at(j),  btag, matching, beg_event, end_event, output_suffix);
+    //for(Int_t j = 0; j < cuts_vec.size(); j++){
+        do_trees(filename, dataType, label, folder, n, pT_low, pT_high, aggregated, btag, matching, beg_event, end_event, output_suffix);
         }
-    }
+    //}
