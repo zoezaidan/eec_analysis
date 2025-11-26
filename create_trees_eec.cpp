@@ -939,7 +939,7 @@ void create_trees_eec(int dataType = 1,                                         
 		      const char* output_suffix = ".root"){
    
 
-    TString folder = "/data_CMS/cms/zaidan/debug/";
+    TString folder = "$mydata/eec_trees/";
     
     TString filename;
     TString label;
