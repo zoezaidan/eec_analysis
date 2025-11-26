@@ -6,7 +6,7 @@ import ROOT
 tree_name       = "hiEvtAnalyzer/HiTree"   # or "dir/subdir/tree"
 n_jobs          = 100
 job_dir         = "exec_jobs"
-macro_name      = "/grid_mnt/vol_home/llr/cms/zaidan/eec_analysis/create_trees_eec.cpp"
+macro_name      = "/home/llr/cms/zaidan/eec_analysis/create_trees_eec.cpp"
 
 # Inputs of the macro
 input_root_file = "/data_CMS/cms/kalipoliti/qcdMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"
@@ -67,8 +67,11 @@ for job_id in range(n_jobs):
         fsh.write('echo "Running on $(hostname)"\n\n')
 
         # Setup environment
-        fsh.write("cd /home/llr/cms/zaidan/CMSSW_10_6_48/src/EEC_Zoe/\n")
-        fsh.write("eval `cmsenv`\n\n")
+        #fsh.write("source /opt/exp_soft/llr/root/v6.18.04-el7-py27-gcc8X/bin/thisroot.sh\n")
+
+        fsh.write("source /opt/exp_soft/llr/root/v6.32-el9-gcc14xx-py3918/bin/thisroot.sh\n")  
+        #fsh.write("cd /home/llr/cms/zaidan/CMSSW_10_6_48/src/EEC_Zoe/\n")
+        #fsh.write("eval `cmsenv`\n\n")
 
         # ROOT macro call
         # Note: escaping quotes for shell
