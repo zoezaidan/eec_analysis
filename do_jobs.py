@@ -6,15 +6,27 @@ import ROOT
 tree_name       = "hiEvtAnalyzer/HiTree"   # or "dir/subdir/tree"
 n_jobs          = 100
 job_dir         = "exec_jobs"
-macro_name      = "/home/llr/cms/zaidan/eec_analysis/create_trees_eec.cpp"
+macro_name      = "~/eec_analysis/create_trees_eec.cpp"
 
-# Inputs of the macro
-input_root_file = "/data_CMS/cms/kalipoliti/qcdMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"
-dataType = 1
+# ------------ Inputs of the macro --------------
+#for bjet:  "/data_CMS/cms/kalipoliti/qcdMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"
+#for dijet: "/data_CMS/cms/kalipoliti/qcdMC/dijet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"
+#for bjet herwig: "/data_CMS/cms/kalipoliti/herwigMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"
+input_root_file = "/data_CMS/cms/kalipoliti/qcdMC/dijet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"
+
+#------------- Datatype --------------
+#for bjet: 1
+#for dijet: 2
+#for bjet_herwig: 3
+dataType = 2
+
+#Other Variables
 pT_low   = 80
 pT_high  = 140
 n        = 1
-btag        = True
+
+#These are very important! Change if needed
+btag        = False
 aggregated  = True
 matching    = True
 
@@ -69,8 +81,8 @@ for job_id in range(n_jobs):
         # Setup environment
         #fsh.write("source /opt/exp_soft/llr/root/v6.18.04-el7-py27-gcc8X/bin/thisroot.sh\n")
 
-        fsh.write("source /opt/exp_soft/llr/root/v6.32-el9-gcc14xx-py3918/bin/thisroot.sh\n")  
-        #fsh.write("cd /home/llr/cms/zaidan/CMSSW_10_6_48/src/EEC_Zoe/\n")
+        #fsh.write("source /opt/exp_soft/llr/root/v6.32-el9-gcc14xx-py3918/bin/thisroot.sh\n")  
+        fsh.write("cd ~/CMSSW_15_1_0/src/EEC_Zoe/\n")
         #fsh.write("eval `cmsenv`\n\n")
 
         # ROOT macro call
