@@ -1,5 +1,5 @@
 //Applies 1D and 2D unfolding to data (both have 2D respomse matrices, which unfolding is used depends on the bool matched)
-#include "binning_histos.h"
+#include "binning_histos_small.h"
 
 
 void apply_unfolding(TString &dataset, TString &label, TString &folder, bool matched, bool btag, Int_t n, TString pT_selection)
@@ -7,7 +7,7 @@ void apply_unfolding(TString &dataset, TString &label, TString &folder, bool mat
     //Select unfolding options
     bool unfoldBayes =  false;
     bool multiply_sigfrac = true;
-    bool correct_tageff = false;
+    bool correct_tageff = true;
     bool reduced = true;
     TString dataset_response = "bjet";
     TString filename_template_fit = folder + "histos_3d_from_templ_" + dataset + "_" + pT_selection + ".root";
@@ -19,7 +19,8 @@ void apply_unfolding(TString &dataset, TString &label, TString &folder, bool mat
     if(!btag) label += "_notag"; 
     fin_name += TString(Form("n%i_", n)) + dataset_response + "_" + label + ".root";
     TString filename_response = folder + fin_name;
-
+    std::cout << "Using response file: " << filename_response << std::endl;
+    
     //Select central pT bin
     int ibin_pt = 2;
 
@@ -109,10 +110,10 @@ void apply_unfolding(TString &dataset, TString &label, TString &folder, bool mat
               << std::endl;
 
     // ---- Grab the truth level MC ---- 
-    TString fname_response_truth = "/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_gen_aggr_n1_MC_bjet_80_140.root";
+    TString fname_response_truth = "/data_CMS/cms/zaidan/eec_trees/fran_bins/hist_3d_gen_aggr_n1_MC_bjet_80_140.root";
     std::cout << "Getting truth from : " << fname_response_truth << std::endl;
     TFile *fin_response_truth = new TFile(fname_response_truth);
-    TH3D *h_mc_true_3D = (TH3D*)fin_response_truth->Get("h3D"); 
+    TH3D *h_mc_true_3D = (TH3D*)fin_response_truth->Get("h3D_all"); 
     TH2D *h_mc_true = (TH2D *)h_mc_true_3D->Project3D("zy")->Clone("h_mc_true");
     //TH2D *h_mc_true = (TH2D *) fin_response_truth->Get("h_full_efficiency_denominator_eecpt"); // true MC to compare w/ data after BOTH efficiency corrections
     
@@ -123,6 +124,7 @@ void apply_unfolding(TString &dataset, TString &label, TString &folder, bool mat
     h_data_purity_corrected->Multiply(h_full_purity);
 
     // ---- Unfold
+    // ACA!!
     std::cout << "\t---->Unfolding" << std::endl;
     RooUnfold::ErrorTreatment errorTreatment = RooUnfold::kCovariance;
     TH2D *h_data_unfolded;
@@ -156,7 +158,7 @@ void apply_unfolding(TString &dataset, TString &label, TString &folder, bool mat
     TH2D *h_eff;
     if (correct_tageff) {
         // ---- Grab b tagging efficiency correction 
-        TString fname_b_tag_eff = "file_efficiency_mc_" + dataset +".root";
+      TString fname_b_tag_eff = folder + "file_efficiency_" + dataset + "_" + pT_selection + ".root";  //"/data_CMS/cms/zaidan/eec_trees/fran_bins/hist_tag_efficiency_MC_bjet_100_120.root";
         std::cout << "Getting b tagging efficiency from: " << fname_b_tag_eff << std::endl;
         TFile *fin_b_tag_eff = new TFile(fname_b_tag_eff);
         h_eff = (TH2D *) fin_b_tag_eff->Get("h_eff");
@@ -365,15 +367,15 @@ void apply_unfolding(TString &dataset, TString &label, TString &folder, bool mat
 }
 
 void apply_unfolding_2d(){
-    std::vector<TString> datasets{"bjet"};   //{"data"};//, "dijet"};
+    std::vector<TString> datasets{"data"};   //{"data"};//, "dijet"};
     
-    TString folder = "/data_CMS/cms/zaidan/eec_trees/merged_trees/";
+    TString folder = "/data_CMS/cms/zaidan/eec_trees/fran_bins/";
 
     TString pT_selection = "80_140";
 
     bool btag = true;
 
-    bool matched = false;
+    bool matched = true;
 
     Int_t n = 1;
 

@@ -15,7 +15,7 @@
 //then you are able to use ROOT as usual, but some things don't work in it, so I only use it whenever I strictly 
 //need any of the RooUnfold versions.
 
-#include "binning_histos.h"
+#include "binning_histos_small.h"
 #include <iostream>
 #include <vector>
 #include <cstdlib> // For std::abs
@@ -134,6 +134,7 @@ void fill_jk_resampling_response(std::vector<RooUnfoldResponse *> responses, dou
 void create_response_1D(TString &filename,  TString &dataset, TString &label, TString &folder, bool &btag, Int_t n, Float_t &pT_low, Float_t &pT_high)
 {    //"trees_" + label + "_" + dataset + "_" + pT_selection + "gen.root";   
 
+    TString flav = label; 
     //Create the fout name depending on the selection
     TString fout_name = "histos_response_1D_";
 
@@ -346,12 +347,12 @@ void create_response_1D(TString &filename,  TString &dataset, TString &label, TS
    
 
         Int_t cuts = 1;
-        if      (label == "b1")    cuts = 1;
-        else if (label == "b2")    cuts = 2;
-        else if (label == "nonb")  cuts = 3;
-        else if (label == "all")   cuts = 4;
-        else if (label == "c")     cuts = 5;
-        else if (label == "light") cuts = 6;
+        if      (flav == "b1")    cuts = 1;
+        else if (flav == "b2")    cuts = 2;
+        else if (flav == "nonb")  cuts = 3;
+        else if (flav == "all")   cuts = 4;
+        else if (flav == "c")     cuts = 5;
+        else if (flav == "light") cuts = 6;
         else {
         std::cerr << "ERROR: Unknown label '" << label << "'\n";
         exit(1);
@@ -612,17 +613,19 @@ void create_response_1D(TString &filename,  TString &dataset, TString &label, TS
 }
 
 //Creates a 2D response matrix and purity/efficiency corrections from a tree
-void create_response_2D(TString &filename,  TString &sample, TString &label, TString &folder, bool &btag, Int_t n, Float_t &pT_low, Float_t &pT_high)
-{   TString fin_name = filename;  
+void create_response_2D(TString &filename,  TString &dataset, TString &label, TString &folder, bool &btag, Int_t n, Float_t &pT_low, Float_t &pT_high)
+{
+    TString flav = label;    
+   
     //Create the fout name depending on the selection
     TString fout_name = "histos_response_2D_";
 
     if(!btag) label += "_notag"; 
 
-    fout_name += TString(Form("n%i_", n)) + sample + "_" + label + ".root";
+    fout_name += TString(Form("n%i_", n)) + dataset + "_" + label + ".root";
 
-    std::cout << "fin: " << folder+fin_name << std::endl;
-    TFile *fin = new TFile(folder+fin_name);
+    std::cout << "fin: " << folder+filename << std::endl;
+    TFile *fin = new TFile(folder+filename);
 
     TString tree_name = "tree";
     
@@ -630,22 +633,9 @@ void create_response_2D(TString &filename,  TString &sample, TString &label, TSt
     TTree *tree = (TTree *) fin->Get(tree_name);
 
     // Set tree addresses
-    Double_t weight;
-    Double_t pthat;
-    Int_t ndr_reco;
-    Int_t ndr_gen;
-    Int_t ndr_reco_tot;
-    Int_t ndr_gen_tot;
-    Double_t jpt_reco;
-    Double_t jpt_gen;
-    Float_t dr_reco[4000];
-    Float_t dr_gen[4000];
-    Float_t eec_reco[4000];
-    Float_t eec_gen[4000];
-    Double_t jt_eta_reco;
-    Double_t jt_eta_gen;
-    Double_t discr;
-
+    Float_t weight, pthat, jpt_reco, jpt_gen, jt_eta_reco, jt_eta_gen, discr;
+    Int_t ndr_reco, ndr_gen, ndr_reco_tot, ndr_gen_tot, jtHadFlav, jtNbHad;
+    Float_t dr_reco[4000], dr_gen[4000], eec_reco[4000], eec_gen[4000];
 
 
     tree->SetBranchAddress("weight", &weight);
@@ -663,6 +653,8 @@ void create_response_2D(TString &filename,  TString &sample, TString &label, TSt
     tree->SetBranchAddress("jt_eta_reco", &jt_eta_reco);
     tree->SetBranchAddress("jt_eta_gen", &jt_eta_gen);
     tree->SetBranchAddress("discr", &discr);
+    tree->SetBranchAddress("jtHadFlav", &jtHadFlav);                                                               
+    tree->SetBranchAddress("jtNbHad", &jtNbHad);                                                                                                                                           
 
 
     // random number generator for jackknife resampling (Lida)
@@ -825,8 +817,29 @@ void create_response_2D(TString &filename,  TString &sample, TString &label, TSt
     for (Long64_t ient = 0; ient < nentries; ient++) {
         //Print progress
         if (ient%1000000==0) cout << "ient=" << ient << std::endl; 
-        tree->GetEntry(ient);
+    	tree->GetEntry(ient);
+	Int_t cuts = 1;                                                                                                                                               
+        if      (flav == "b1")    cuts = 1;                                                                                                                           
+        else if (flav == "b2")    cuts = 2;                                                                                                                           
+        else if (flav == "nonb")  cuts = 3;                                                                                                                           
+        else if (flav == "all")   cuts = 4;                                                                                                                           
+        else if (flav == "c")     cuts = 5;                                                                                                                           
+        else if (flav == "light") cuts = 6;                                                                                                                           
+        else {                                                                                                                                                      
+	  std::cerr << "ERROR: Unknown label '" << label << "'\n";                                                                                                  
+	  exit(1);                                                                                                                                                       
+	}       
 
+	bool skip = false;                                                                                                                                                    // Select jet flavour and/or select on the number of b hadrons                                                                                                                                                                                                                                          
+        switch(cuts){                                                                                                                                                
+	  //b-jet with one b hadron                                                                                                                                  
+	case 1:                                                                                                                                                               	  if (std::abs(jtHadFlav) < 5) skip = true;                                                                                                                         	  if (std::abs(jtNbHad) != 1) skip = true;                                                                                                                        	  break;                                                                                                                                                       	  //b-jet with more than 1 b hadron                                                                                                                           
+	case 2:                                                                                                                                                              	  if (std::abs(jtHadFlav) < 5) skip = true;                                                                                                                          	  if (std::abs(jtNbHad) < 2) skip = true;                                                                                                                     	  break;                                                                                                                                                                   	  //non-b jets                                                                                                                                                                                                                                                                                          
+	case 3:                                                                                                                                                              	  if (std::abs(jtHadFlav) == 5) skip = true;                                                                                                                         	  break;                                                                                                                                                             	  //no flavour selection                                                                                                                                                                                                                                                                                
+	case 4:                                                                                                                                                              	  skip = false;                                                                                                                                                    	  break;                                                                                                                                                         	  //c-jets                                                                                                                                                     
+	case 5:                                                                                                                                                              	  if(std::abs(jtHadFlav) != 4) skip = true;                                                                                                                 	  break;                                                                                                                                                          	  //light (non-b non-c) jets                                                                                                                                                                                                                                                                            
+	case 6:                                                                                                                                                       	  if(std::abs(jtHadFlav) >= 4) skip = true;                                                                                                                         	  break;                                                                                                                                                                  }                                                                                                                                                                     if (skip) continue;      
+	/////////////////////////////
 
         if (skipMC(jpt_reco, jpt_gen, pthat)) continue;
 
@@ -1098,9 +1111,7 @@ void create_response_2D(TString &filename,  TString &sample, TString &label, TSt
 
 //Creates a 3D response matrix and purity/efficiency corrections from a tree
 void create_response_3D(TString &filename,  TString &sample, TString &label, TString &folder, bool btag, Int_t &n, Float_t &pT_low, Float_t &pT_high)
-{   TString fin_name = filename;  
-    
-    //Create the fout name depending on the selection
+{    //Create the fout name depending on the selection
     TString fout_name = "histos_response_3D_";
 
     if(!btag) label += "_notag"; 
@@ -1108,31 +1119,20 @@ void create_response_3D(TString &filename,  TString &sample, TString &label, TSt
     fout_name += TString(Form("n%i_", n)) + sample + "_" + label + ".root";
 
 
-    std::cout << "fin: " << fin_name << std::endl;
-    TFile *fin = new TFile(fin_name);
+    std::cout << "fin: " << filename << std::endl;
+    TFile *fin = new TFile(folder + filename);
 
     TString tree_name = "tree";
     std::cout << "tree: " << tree_name << std::endl;
     TTree *tree = (TTree *) fin->Get(tree_name);
 
     // Set tree addresses
-    Double_t weight;
-    Double_t pthat;
-    Int_t ndr_reco;
-    Int_t ndr_gen;
-    Int_t ndr_reco_tot;
-    Int_t ndr_gen_tot;
-    Double_t jpt_reco;
-    Double_t jpt_gen;
-    Float_t dr_reco[4000];//Check that the size here matches the one you used to build the trees
-    Float_t dr_gen[4000];
-    Float_t eec_reco[4000];
-    Float_t eec_gen[4000];
-    Double_t jt_eta_reco;
-    Double_t jt_eta_gen;
-    Double_t discr;
 
 
+    Float_t weight, pthat, jpt_reco, jpt_gen, jt_eta_reco, jt_eta_gen, discr;                                                                                         
+    Int_t ndr_reco, ndr_gen, ndr_reco_tot, ndr_gen_tot, jtHadFlav, jtNbHad;                                                                                           
+    Float_t dr_reco[4000], dr_gen[4000], eec_reco[4000], eec_gen[4000];                                                                                                
+        
 
     tree->SetBranchAddress("weight", &weight);
     tree->SetBranchAddress("pthat", &pthat);
@@ -1149,6 +1149,9 @@ void create_response_3D(TString &filename,  TString &sample, TString &label, TSt
     tree->SetBranchAddress("jt_eta_reco", &jt_eta_reco);
     tree->SetBranchAddress("jt_eta_gen", &jt_eta_gen);
     tree->SetBranchAddress("discr", &discr);
+    tree->SetBranchAddress("jtHadFlav", &jtHadFlav);                                                                                         
+    tree->SetBranchAddress("jtNbHad", &jtNbHad);                                                                                             
+        
 
     Int_t dr_bins = bins_dr;
 
@@ -1835,23 +1838,15 @@ void create_response_3D_inclusive(TString &sample, TString &label, TString &fold
         TTree *tree = (TTree *) fin->Get(tree_name);
 
         // Set tree addresses
-        Float_t weight;
-        Float_t pthat;
-        Int_t ndr_reco;
-        Int_t ndr_gen;
+        
+        
         Int_t ndr_reco_tot;
         Int_t ndr_gen_tot;
-        Float_t jpt_reco;
-        Float_t jpt_gen;
-        Float_t dr_reco[6000];
-        Float_t dr_gen[6000];
-        Float_t eec_reco[6000];
-        Float_t eec_gen[6000];
-        Float_t jt_eta_reco;
-        Float_t jt_eta_gen;
-        Float_t discr;
-    
-    
+        
+	Int_t ndr_reco, ndr_gen, jtHadFlav, jtNbHad;                                                                                             
+	Float_t weight, pthat, jpt_reco, jpt_gen, mb_reco, mb_gen, jt_eta_reco, jt_eta_gen, discr;                                               
+	Float_t dr_reco[6000], dr_gen[6000], eec_reco[6000], eec_gen[6000];                                                                      
+        
     
         tree->SetBranchAddress("weight", &weight);
         tree->SetBranchAddress("pthat", &pthat);
@@ -1868,7 +1863,9 @@ void create_response_3D_inclusive(TString &sample, TString &label, TString &fold
         tree->SetBranchAddress("jt_eta_reco", &jt_eta_reco);
         tree->SetBranchAddress("jt_eta_gen", &jt_eta_gen);
         tree->SetBranchAddress("discr", &discr);
-
+	tree->SetBranchAddress("jtHadFlav", &jtHadFlav);                                                                                         
+	tree->SetBranchAddress("jtNbHad", &jtNbHad);                                                                                             
+         
 
 
         Long64_t nentries = tree->GetEntries();
@@ -2365,7 +2362,7 @@ void get_eec_dr_migration(TString &filename, TString &sample, TString &label, TS
 void create_response(){
     std::vector<TString> datasets{"bjet"}; //{"bjet"};//, "dijet"};
     
-    TString folder = "/data_CMS/cms/zaidan/eec_trees/merged_trees/";               //$mydata/eec_trees/merged_trees/";
+    TString folder = "/data_CMS/cms/zaidan/eec_trees/fran_bins/";               //$mydata/eec_trees/merged_trees/";
     Float_t pT_low = 80;
     Float_t pT_high = 140;
     TString pT_selection = "80_140";
@@ -2377,15 +2374,11 @@ void create_response(){
 
     for(Int_t i = 0; i < datasets.size(); i++){
         for(Int_t j = 0; j < labels_vec.size(); j++){
-	  //	  TString filename = "trees_nocuts_matched_aggr_BDT_n1_bjet_80_140_job_0_root614.root";
-	  //	  TString filename = "trees_nocuts_matched_aggr_BDT_n1_bjet_80_140_job_0_root632.root";
-	  //trees_nocuts_noaggr_n1_bjet_herwig_inclusive_80_140_93.root
-
-	  TString filename = "merged_trees_nocuts_matched_noaggr_n1_" + datasets.at(i) + "_inclusive_"+ pT_selection + ".root";
+	  TString filename = "merged_trees_nocuts_matched_aggr_BDT_n1_" + datasets.at(i) + "_inclusive_"+ pT_selection + ".root";
 	  std::cout << "Processing file: " << filename << std::endl;
-	  create_response_1D(filename,  datasets.at(i), labels_vec.at(j), folder, btag, n, pT_low, pT_high);
-      //create_response_2D(filename,  datasets.at(i), labels_vec.at(j), folder, btag, n, pT_low, pT_high);
-      //create_response_3D(filename,  datasets.at(i), labels_vec.at(j), folder, btag, n, pT_low, pT_high);
+	  //create_response_1D(filename,  datasets.at(i), labels_vec.at(j), folder, btag, n, pT_low, pT_high);
+	  //	  create_response_2D(filename,  datasets.at(i), labels_vec.at(j), folder, btag, n, pT_low, pT_high);
+	  create_response_3D(filename,  datasets.at(i), labels_vec.at(j), folder, btag, n, pT_low, pT_high);
       //create_response_3D_inclusive(filename,  datasets.at(i), folder, btag, n, pT_low, pT_high);
     
 	  //get_eec_dr_migration(filename, datasets.at(i), labels_vec.at(j), folder, btag);
