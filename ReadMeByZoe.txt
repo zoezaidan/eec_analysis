@@ -79,4 +79,5 @@ ________________________________________________________________________________
 
 3) DO THE UNFOLDING (you will need several codes for this, so it will be divided in smaller parts)
 
+To do it exactly like Francesca, you will need to use the same binning you used for template fit which is in the file binning_histos_small.h
 
