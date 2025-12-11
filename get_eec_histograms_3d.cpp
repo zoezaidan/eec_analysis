@@ -1242,7 +1242,7 @@ for (Long64_t ient = 0; ient < maxEvents && ient < t.GetEntries(); ient++) { //A
 //____________________________________________________________________________________________________________
 
 
-/*
+
 
 //Get the signal/background rejection efficiency of the BDT score cut
 void get_efficiency_histograms(TString &filename, TString &folder,  TString &dataType, bool &btag){
@@ -1266,16 +1266,30 @@ void get_efficiency_histograms(TString &filename, TString &folder,  TString &dat
   
 
   //create the signal (b daughters) and background (non-b daughters) distributions
-  TH1D *h_signal = new TH1D("h_signal", "h_signal", 40, -1,1);
-  TH1D *h_background = new TH1D("h_background", "h_background", 40, -1,1);
+  //TH1D *h_signal = new TH1D("h_signal", "h_signal", 40, -1,1);
+  //TH1D *h_background = new TH1D("h_background", "h_background", 40, -1,1);
 
+  TH1D *h_signal_all, *h_signal_b1, *h_signal_b2, *h_signal_c, *h_signal_light;  
+  TH1D *h_background_all, *h_background_b1, *h_background_b2, *h_background_c, *h_background_light;                                                                                                               
+
+  h_signal_all = new TH1D("h_signal_all", "h_signal_all", 40, -1,1);
+  h_signal_b1 = new TH1D("h_signal_b1", "h_signal_b1", 40, -1,1);
+  h_signal_b2 = new TH1D("h_signal_b2", "h_signal_b2", 40, -1,1);
+  h_signal_c = new TH1D("h_signal_c", "h_signal_c", 40, -1,1);
+  h_signal_light = new TH1D("h_signal_light", "h_signal_light", 40, -1,1);
+
+  h_background_all = new TH1D("h_background_all", "h_background_all", 40, -1,1);
+  h_background_b1 = new TH1D("h_background_b1", "h_background_b1", 40, -1,1);
+  h_background_b2 = new TH1D("h_background_b2", "h_background_b2", 40, -1,1);
+  h_background_c = new TH1D("h_background_c", "h_background_c", 40, -1,1);
+  h_background_light = new TH1D("h_background_light", "h_background_light", 40, -1,1);
+                                                                                                                                                              
 
 //Save prescale (only for 40 GeV trigger)
   double prescale_pf40 = 33.917210;
   
   std::cout << "Calculating BDT efficiencies" << std::endl;
-  std::cout << "Dataset = " << dataset << std::endl;
-  std::cout << "Selection = " << label << std::endl;
+  std::cout << "Dataset = " << dataType << std::endl;
   std::cout << "Events = " << t.GetEntries() << std::endl;
   
   //looping over events
@@ -1307,40 +1321,6 @@ void get_efficiency_histograms(TString &filename, TString &folder,  TString &dat
       // Skip large weight events in MC
       if (skipMC(t.jtpt[ijet], t.pthat)) continue;
 
-      bool skip = false;
-
-      // Select jet flavour and/or select on the number of b hadrons
-      switch(cuts){
-	//b-jet with one b hadron
-      case 1: 
-	if (t.jtHadFlav[ijet] < 5) skip = true;
-	if (t.jtNbHad[ijet] != 1) skip = true;
-	break;
-	//b-jet with more than 1 b hadron
-      case 2:
-	if (t.jtHadFlav[ijet] < 5) skip = true;
-	if (t.jtNbHad[ijet] < 2) skip = true;
-	break;
-	//non-b jets
-      case 3:
-	if (std::abs(t.jtHadFlav[ijet]) == 5) skip = true;
-	break;
-	//no flavour selection
-      case 4:
-	skip = false;
-	break;
-	//c-jets
-      case 5:
-	if(std::abs(t.jtHadFlav[ijet]) != 4) skip = true;
-	break;
-	//light (non-b non-c) jets
-      case 6:
-	if(std::abs(t.jtHadFlav[ijet]) >= 4) skip = true;
-	break;
-      }
-
-      if (skip) continue;
-
 
       //Select jets passing the b-jet tagging (if needed)
       if (btag && std::abs(t.discr_particleNet_BvsAll[ijet]) <= 0.99) continue;
@@ -1367,39 +1347,110 @@ void get_efficiency_histograms(TString &filename, TString &folder,  TString &dat
 	Double_t bdt_score = t.trkBdtScore[itrk];
 
 	//The track is or not a true b hadron decay daughter
-	if(t.trkMatchSta[itrk]<100) h_background->Fill(bdt_score);
-	else h_signal->Fill(bdt_score);
 
-      }
+//Fill
+if(t.trkMatchSta[itrk]<100){
+  h_background_all->Fill(bdt_score);
+	if (t.jtHadFlav[ijet] == 5){
+		if (t.jtNbHad[ijet] == 1){
+      h_background_b1->Fill(bdt_score);
+		}
+		  else{
+      h_background_b2->Fill(bdt_score);
+		}
+	      }
+	  else if (t.jtHadFlav[ijet] == 4){
+      h_background_c->Fill(bdt_score);
+	      }
+  else{
+	  h_background_light->Fill(bdt_score);
+	
+	      }                                                                                                                                                                                                                                                                                                            
+	    }                
+else{
+  h_signal_all->Fill(bdt_score);
+	if (t.jtHadFlav[ijet] == 5){
+		if (t.jtNbHad[ijet] == 1){
+		  h_signal_b1->Fill(bdt_score);
+		}
+		else{
+		  h_signal_b2->Fill(bdt_score);
+		}
+	}
+	else if (t.jtHadFlav[ijet] == 4){
+		h_signal_c->Fill(bdt_score);}
+    else{
+		  h_signal_light->Fill(bdt_score);
+	      }                                                                                                                                                                                                                                                                                                            
+	    }                
     }
-  }
+}
+
 
   //Create fout name
+
+  
   TString fout_name = "hist_efficiency_";
+  TString label;
+  if (dataType == 1) {
+    label = "MC_bjet";
+  }
+  else if (dataType == 2) {
+    label = "MC_dijet";
+  }
+  else {
+    label = "unknown";
+  }
 
   if(!btag) label += "_notag"; 
 
-  fout_name += label + "_" + dataset + "_" + TString(Form("%i_%i",int(pT_low), int(pT_high))) + + ".root";
+  fout_name += label + "_" + TString(Form("%i_%i",int(pT_low), int(pT_high))) + + ".root";
 
   //Save histograms
   TFile *fhist = new TFile(folder+fout_name, "recreate");
-  h_signal->Write();
-  h_background->Write();
+  h_signal_all->Write();
+  h_signal_b1->Write();
+  h_signal_b2->Write();
+  h_signal_c->Write();
+  h_signal_light->Write();
+
+  h_background_all->Write();
+  h_background_b1->Write();
+  h_background_b2->Write();
+  h_background_c->Write();
+  h_background_light->Write();
 
   //Print efficiencies (select a binning where one of the bin edges corresponds to your BDT cut value,
   //then integrate from that value to 1 and divide by the full integral)
-  std::cout << "Signal efficiency for -0.9 = " << h_signal->Integral(3,40)/h_signal->Integral(1,40) << std::endl;
-  std::cout << "Background rejection efficiency for -0.9 = " << 1-(h_background->Integral(3, 40)/h_background->Integral(1,40)) << std::endl;
+  std::cout << "Signal efficiency for -0.9 = " << h_signal_all->Integral(3,40)/h_signal_all->Integral(1,40) << std::endl;
+  std::cout << "Signal efficiency for -0.9 = " << h_signal_b1->Integral(3,40)/h_signal_b1->Integral(1,40) << std::endl;
+  std::cout << "Signal efficiency for -0.9 = " << h_signal_b2->Integral(3,40)/h_signal_b2->Integral(1,40) << std::endl;
+  std::cout << "Signal efficiency for -0.9 = " << h_signal_c->Integral(3,40)/h_signal_c->Integral(1,40) << std::endl;
+  std::cout << "Signal efficiency for -0.9 = " << h_signal_light->Integral(3,40)/h_signal_light->Integral(1,40) << std::endl;
 
-  std::cout << "Signal efficiency for -0.95 = " << h_signal->Integral(2,40)/h_signal->Integral(1,40) << std::endl;
-  std::cout << "Background rejection efficiency for -0.95 = " << 1-(h_background->Integral(2, 40)/h_background->Integral(1, 40)) << std::endl;
+  std::cout << "Background rejection efficiency for -0.9 = " << 1-(h_background_all->Integral(3, 40)/h_background_all->Integral(1,40)) << std::endl;
+  std::cout << "Background rejection efficiency for -0.9 = " << 1-(h_background_b1->Integral(3, 40)/h_background_b1->Integral(1,40)) << std::endl;
+  std::cout << "Background rejection efficiency for -0.9 = " << 1-(h_background_b2->Integral(3, 40)/h_background_b2->Integral(1,40)) << std::endl;
+  std::cout << "Background rejection efficiency for -0.9 = " << 1-(h_background_c->Integral(3, 40)/h_background_c->Integral(1,40)) << std::endl;
+  std::cout << "Background rejection efficiency for -0.9 = " << 1-(h_background_light->Integral(3, 40)/h_background_light->Integral(1,40)) << std::endl;
+
+  std::cout << "Signal efficiency for -0.95 = " << h_signal_all->Integral(2,40)/h_signal_all->Integral(1,40) << std::endl;
+  std::cout << "Signal efficiency for -0.95 = " << h_signal_b1->Integral(2,40)/h_signal_b1->Integral(1,40) << std::endl;
+  std::cout << "Signal efficiency for -0.95 = " << h_signal_b2->Integral(2,40)/h_signal_b2->Integral(1,40) << std::endl;
+  std::cout << "Signal efficiency for -0.95 = " << h_signal_c->Integral(2,40)/h_signal_c->Integral(1,40) << std::endl;
+  std::cout << "Signal efficiency for -0.95 = " << h_signal_light->Integral(2,40)/h_signal_light->Integral(1,40) << std::endl;
+
+
+  std::cout << "Background rejection efficiency for -0.95 = " << 1-(h_background_all->Integral(2, 40)/h_background_all->Integral(1, 40)) << std::endl;
+  std::cout << "Background rejection efficiency for -0.95 = " << 1-(h_background_b1->Integral(2, 40)/h_background_b1->Integral(1, 40)) << std::endl;
+  std::cout << "Background rejection efficiency for -0.95 = " << 1-(h_background_b2->Integral(2, 40)/h_background_b2->Integral(1, 40)) << std::endl;
+  std::cout << "Background rejection efficiency for -0.95 = " << 1-(h_background_c->Integral(2, 40)/h_background_c->Integral(1, 40)) << std::endl;
+  std::cout << "Background rejection efficiency for -0.95 = " << 1-(h_background_light->Integral(2, 40)/h_background_light->Integral(1, 40)) << std::endl;
 
 
   fhist->Close();
 }
-
-
-*/
+}
 
 //_________________________________________Get the b-tagging efficiency
 void get_tag_efficiency_histograms(TString &filename,  TString &folder, Int_t dataType){
@@ -1423,6 +1474,7 @@ void get_tag_efficiency_histograms(TString &filename,  TString &folder, Int_t da
     
 
   //Create signal (b-jets) and background (non-b jets) distributions
+  
   TH1D *h_signal = new TH1D("h_signal", "h_signal", 100, 0, 1);
   TH1D *h_background = new TH1D("h_background", "h_background", 100, 0, 1);
 
@@ -1474,7 +1526,7 @@ void get_tag_efficiency_histograms(TString &filename,  TString &folder, Int_t da
 
       //Fill signal and background histograms
       if (std::abs(t.jtHadFlav[ijet]) == 5){
-	h_signal->Fill(tag_discr);
+	      h_signal->Fill(tag_discr);
       }
       else h_background->Fill(tag_discr);
 
@@ -1523,7 +1575,7 @@ void get_tag_efficiency_histograms(TString &filename,  TString &folder, Int_t da
 
 
 // ______ HIST _____
-void get_eec_histograms_3d(int dataType = 2,
+void get_eec_histograms_3d(int dataType = 1,
 			   //-1 for data Low //0 for data High //1 for MC - bjet //2 for MC - dijet
 			   
 			   //Select pT range (later divided into 3 bins, central bin is the nominal one)
@@ -1534,14 +1586,14 @@ void get_eec_histograms_3d(int dataType = 2,
 			   Int_t n=1, 
 
 			   //apply b-tagging or aggregation	 
-			   bool btag = false,
+			   bool btag = true,
 			   bool aggregated = true, 
 			   bool ideal_aggr = false ){
   
     
 
   //Folder where to save files
-  TString folder = "$mydata/test_for_code_mods/smaller_bins/";
+  TString folder = "$mydata/eec_trees/fran_bins/";
   
   TString filename;
   TString dataset;
@@ -1579,17 +1631,17 @@ void get_eec_histograms_3d(int dataType = 2,
  
     
   cout<<"let's start :)  " <<endl;
-  do_hist(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr);
+  //do_hist(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr);
   //do_hist_e3c(filenames, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr);
 
     if(dataType>0){
-      cout<<" do_hist_gen "<<endl;
-      do_hist_gen(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr);
-      //do_hist_e3c_gen(filenames, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated);
-      //cout<<" get_efficiency_histograms "<<endl;
-      //get_efficiency_histograms(filenames.at(i), datasets.at(i), cuts_vec.at(j), labels_vec.at(j), btag, folder);
-      //cout<<" get_tag_efficiency_histograms "<<endl;
-      //get_tag_efficiency_histograms(filenames.at(i), folder, dataType);
+      //  cout<<" do_hist_gen "<<endl;
+      //do_hist_gen(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr);
+      do_hist_e3c_gen(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated);
+      cout<<" get_efficiency_histograms "<<endl;
+      get_efficiency_histograms(filename, folder, dataset, btag);
+      cout<<" get_tag_efficiency_histograms "<<endl;
+      get_tag_efficiency_histograms(filename, folder, dataType);
       cout<<" done "<<endl;
     }
 }

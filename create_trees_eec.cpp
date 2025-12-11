@@ -4,7 +4,7 @@
 #include "TH3.h"
 #include "TSystem.h"
 #include "TString.h"
-#include "binning_histos.h"
+#include "binning_histos_small.h"
 #include "Math/GenVector/VectorUtil.h"
 #pragma cling load("libGenVector.so")
 #include "TSystem.h"
@@ -939,7 +939,7 @@ void create_trees_eec(int dataType = 1,                                         
 		      const char* output_suffix = ".root"){
    
 
-    TString folder = "$mydata/eec_trees/";
+    TString folder = "$mydata/eec_trees/fran_bins/unmerged_trees/";
     
     TString filename;
     TString label;

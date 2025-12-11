@@ -15,7 +15,7 @@
 //then you are able to use ROOT as usual, but some things don't work in it, so I only use it whenever I strictly 
 //need any of the RooUnfold versions.
 
-#include "binning_histos.h"
+#include "binning_histos_small.h"
 #include <iostream>
 #include <vector>
 #include "TFile.h"
@@ -2363,7 +2363,8 @@ void get_eec_dr_migration(TString &filename, TString &sample, TString &label, TS
 void create_response(){
     std::vector<TString> datasets{"bjet"};//, "dijet"};
     
-    TString folder = "/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/trees/";
+    TString folder = gSystem->ExpandPathName("$mydata"); //"$mydata";
+    folder += "eec_trees/fran_bins/";     //test_for_code_mods/run_with_mod_code/trees/";
     Float_t pT_low = 80;
     Float_t pT_high = 140;
     TString pT_selection = "80_140";
@@ -2375,7 +2376,8 @@ void create_response(){
 
     for(Int_t i = 0; i < datasets.size(); i++){
         for(Int_t j = 0; j < labels_vec.size(); j++){
-	  TString filename = "trees_nocuts_matched_noaggr_notag_n1_" + datasets.at(i) + "_" + pT_selection + ".root";
+	  TString filename = "merged_trees_nocuts_matched_noaggr_n1_" + datasets.at(i) + "_inclusive_notag_" + pT_selection + ".root";
+	  //	  TString filename = "merged_trees_nocuts_matched_noaggr_notag_n1_" + datasets.at(i) + "_" + pT_selection + ".root";
 	  std::cout << "Processing file: " << filename << std::endl;
 	  create_response_1D(filename,  datasets.at(i), labels_vec.at(j), folder, btag, n, pT_low, pT_high);
 	  //get_eec_dr_migration(filename, datasets.at(i), labels_vec.at(j), folder, btag);

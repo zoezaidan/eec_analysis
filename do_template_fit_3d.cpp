@@ -7,7 +7,7 @@ void rebin_mass(TH3D* &h){
     Int_t bins_pt = h->GetNbinsZ();
     Int_t bins_dr = h->GetNbinsY();
 
-    Int_t last_mb_bin = 12;
+    Int_t last_mb_bin = 13;
 
     for(Int_t ibin_pt = 1; ibin_pt <= bins_pt; ibin_pt++){
         for(Int_t ibin_dr = 1; ibin_dr <= bins_dr; ibin_dr++){
@@ -622,20 +622,24 @@ void do_template_fit_3d(bool isMC = false){
   TString pT_selection = "80_140";
   TString pT_selection_label = "80 < pT < 140 GeV";
     
-  TString folder = "/data_CMS/cms/zaidan/test_for_code_mods/smaller_bins/";
+//Template fit using also the bjet distribution
+  bool also_bjet = true;
+  TString also_bjet_str;
+  if (also_bjet) also_bjet_str = "and_bjet";
+  else also_bjet_str = "";
+
+//Normalise the eec plot
+  bool norm = true;
+
+  TString folder = "/data_CMS/cms/zaidan/eec_trees/fran_bins/";
   TString fout_name = folder + "histos_3d_from_templ_data_" + pT_selection + ".root";
   
-    //Template fit using also the bjet distribution
-    bool also_bjet = true;
-
-    //Normalise the eec plot
-    bool norm = true;
-
+    
     //Plot also the mc eec
     bool all = true;
 
     //Correct for tagging efficiency
-    bool eff_corr = false;
+    bool eff_corr = true;
 
     //Select jtpt bin for plotting
     Int_t pt_bin = 2;
