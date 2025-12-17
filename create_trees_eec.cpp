@@ -926,7 +926,7 @@ std::cout << "Reco matched tracks = " << 100.0 * tot_reco_matched_tracks / tot_r
 
 }
 
-void create_trees_eec(int dataType = 1,                                                                                                                               //-1 for data Low //0 for data High //1 for MC - bjet //2 for MC - dijet //3 for bjet_herwig                                                                          
+void create_trees_eec(int dataType = 2,                                                                                                                               //-1 for data Low //0 for data High //1 for MC - bjet //2 for MC - dijet //3 for bjet_herwig                                                                          
 		      Float_t pT_low = 80,                                                                                                                              
 		      Float_t pT_high = 140,                                                                                                                            
 		      Int_t n=1,                                                                                                                                        
@@ -934,7 +934,7 @@ void create_trees_eec(int dataType = 1,                                         
 		      Int_t end_event = 1000,
 
 		      bool btag = false,
-		      bool aggregated = false,
+		      bool aggregated = true,
 		      bool matching = true,
 		      const char* output_suffix = ".root"){
    
