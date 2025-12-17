@@ -283,13 +283,11 @@ void create_trackVectors_gen(std::vector<ROOT::Math::PtEtaPhiMVector>& trackVect
 
 
 //_____________________________________________________________________________________________
-//_______________________________Get EEC histograms at reco mod :)____________________________________
+//_______________________________Get EEC histograms at reco____________________________________
 //_____________________________________________________________________________________________
 
-
 //Create a 3D 2-point EEC(dr) histogram from tree
-void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float_t &pT_low, Float_t &pT_high, Int_t &n, bool &btag, bool aggregated = true,  bool ideal_aggr = false){
-
+void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float_t &pT_low, Float_t &pT_high, Int_t &n, bool &btag, bool &aggregated, bool &ideal_aggr, Int_t &beg_event, Int_t &end_event, const char* output_suffix){
   TString fin_name = filename;
   tTree t;
   t.Init(fin_name,isMC);
@@ -394,8 +392,6 @@ void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float
       // Skip large weight events in MC
       if ((isMC) && skipMC(t.jtpt[ijet], t.pthat)) continue;
 
-      bool skip = false;
-
 
       //Select jets passing the b-jet tagging (if needed)
       if (btag && std::abs(t.discr_particleNet_BvsAll[ijet]) <= 0.99) continue;
@@ -410,7 +406,6 @@ void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float
       //Select jet pt - high limit
       if (std::abs(t.jtpt[ijet]) > pT_high) continue;
 
-	
       //save jet pt, eta and phi
       Float_t jet_pt = t.jtpt[ijet];
       Float_t jet_eta = t.jteta[ijet];
@@ -425,16 +420,14 @@ void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float
 
       //Aggregate tracks (or not) with BDT or with gen information
 
-
-
       if (aggregated){
-	mB = ReconstuctSingleB(trackVectors, t, ijet);
-	if (ideal_aggr) mB = ReconstuctSingleB_ideal(trackVectors, t, ijet);
+	      mB = ReconstuctSingleB(trackVectors, t, ijet);
+	      if (ideal_aggr) mB = ReconstuctSingleB_ideal(trackVectors, t, ijet);
       }
       else{
-	create_trackVectors_reco(trackVectors, t, ijet);
-	//If not aggregated mB is the value saved in the tree
-	mB = t.jtmB[ijet];
+	      create_trackVectors_reco(trackVectors, t, ijet);
+	      //If not aggregated mB is the value saved in the tree
+	      mB = t.jtmB[ijet];
       }
 
       // Get the new nr of tracks
@@ -448,7 +441,6 @@ void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float
 	Float_t etai = trackVectors[i].Eta();
 	Float_t phii = trackVectors[i].Phi();
 	Float_t ipt = trackVectors[i].Pt();
-
 
 	//Select tracks with pT > 1 GeV
 	if(ipt < 1) continue;
@@ -464,7 +456,6 @@ void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float
 
 	  //Select tracks with pT > 1 GeV
 	  if(jpt < 1) continue;
-		    
 		    
 	  // Calculate dr
 	  Float_t dr = t.calc_dr(etai, phii, etaj, phij);
@@ -505,7 +496,6 @@ void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float
 	  }
 	}
       }	   
-
     }
   }
     
@@ -533,12 +523,9 @@ void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float
     if (ideal_aggr) fout_name += "ideal_aggr_";
   }
   else fout_name += "noaggr_";  
-
-
   if(!btag) label += "_notag"; 
  
   fout_name += TString(Form("n%i_",n)) + label + "_" + TString(Form("%i_%i",int(pT_low), int(pT_high))) + ".root";
-
   //Save histograms and close file
   std::cout << "Creating file: " << fout_name << std::endl;
   TFile *fhist = new TFile(folder+fout_name, "recreate");
@@ -1036,9 +1023,7 @@ void do_hist_e3c_gen(TString &filename,	TString folder, int &dataType, bool isMC
   TString fin_name = filename;//
   tTree t;
   t.Init(fin_name,isMC);
-      
-  // Turn off all branches and turn on only the interesting ones
-  // Attention! If a branch is off, it will return bs without crashing 
+      reettention! If a branch is off, it will return bs without crashing 
   t.SetBranchStatus("*", 0);
   std::vector<TString> active_branches = {"weight",
     "nref", "refmB", 
@@ -1601,7 +1586,7 @@ void get_eec_histograms_3d(int dataType = 1,
   bool isMC = true;
   
 
-  if(dataType == -1){  //________________________________data High______________________________
+  if(dataType == -1){  //________________________________data______________________________
     filename = "/data_CMS/cms/kalipoliti/bJet2017G/LowEGJet/aggrTMVA_fixedMassBug/all_merged_HiForestMiniAOD.root";
     dataset = "LowEGJet";
     isMC = false;
