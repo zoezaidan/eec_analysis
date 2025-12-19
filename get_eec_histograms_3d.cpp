@@ -345,7 +345,7 @@ void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float
 
   int maxEvents = t.GetEntries();
 
-  for (Long64_t ient = 0; ient < maxEvents && ient < t.GetEntries(); ient++) { //ATTENTION
+  for (Long64_t ient = beg_event; ient <= end_event; ient++) { //ATTENTION
 
     int mult = maxEvents/10;
       
@@ -472,12 +472,9 @@ void do_hist(TString &filename,	TString folder, int &dataType, bool &isMC, Float
 	  if(mB >= mb_max) mB = mb_max_fill;
 
 	  //Fill
-
-		   
 	  h3D_all->Fill(mB, dr, jet_pt, eec*weight_tree);
-
 	  if(isMC){
-		    
+
 	    if (t.jtHadFlav[ijet] == 5){
 			
 	      if (t.jtNbHad[ijet] == 1){
@@ -778,7 +775,7 @@ void do_hist_e3c(TString &filename, TString folder, int &dataType, bool &isMC, F
 //_____________________________________________________________________________________________
 
 //Create a 3D 2-point EEC(dr) histogram from tree at gen level
-void do_hist_gen(TString &filename, TString folder, int &dataType, bool &isMC, Float_t &pT_low, Float_t &pT_high, Int_t &n, bool &btag, bool aggregated = true,  bool ideal_aggr = false){
+void do_hist_gen(TString &filename, TString folder, int &dataType, bool &isMC, Float_t &pT_low, Float_t &pT_high, Int_t &n, bool &btag, bool &aggregated,  bool &ideal_aggr,Int_t &beg_event, Int_t &end_event, const char* output_suffix){
 //void do_hist_gen(TString &filename,  TString &dataset, Float_t &pT_low, Float_t &pT_high, bool &aggregated, Int_t &cuts, TString &label, bool &btag, Int_t &n, TString folder){
 
   if (!isMC) {                                                                                                                                                                                                                                                                                                            std::cerr << "Error: This function should not be called with data. Process terminated." << std::endl;
@@ -847,7 +844,7 @@ std::cout << "Looping over events" << std::endl;
 
 int maxEvents = t.GetEntries();;                                                                                                                                             
 
-for (Long64_t ient = 0; ient < maxEvents && ient < t.GetEntries(); ient++) { //ATTENTION                                                                           
+for (Long64_t ient = beg_event; ient <= end_event; ient++) { //ATTENTION                                                                           
   
   int mult = maxEvents/10;                                                                                                                                         
   
@@ -872,7 +869,6 @@ for (Long64_t ient = 0; ient < maxEvents && ient < t.GetEntries(); ient++) { //A
     // Skip jets outside tracker 
     if (std::abs(t.refeta[ijet]) > 1.6) continue;
 
-    bool skip = false;
 
     //Select jets passing the b-jet tagging
     if (btag && std::abs(t.discr_particleNet_BvsAll[ijet]) <= 0.99) continue;
@@ -1023,7 +1019,7 @@ void do_hist_e3c_gen(TString &filename,	TString folder, int &dataType, bool isMC
   TString fin_name = filename;//
   tTree t;
   t.Init(fin_name,isMC);
-      reettention! If a branch is off, it will return bs without crashing 
+  //Attention! If a branch is off, it will return bs without crashing 
   t.SetBranchStatus("*", 0);
   std::vector<TString> active_branches = {"weight",
     "nref", "refmB", 
@@ -1568,12 +1564,15 @@ void get_eec_histograms_3d(int dataType = 1,
 			   Float_t pT_high = 140, 
 
 			   //select eec weight exponent
-			   Int_t n=1, 
+			   Int_t n=1,
+         Int_t beg_event = 0,
+		     Int_t end_event = 1000, 
 
 			   //apply b-tagging or aggregation	 
 			   bool btag = true,
 			   bool aggregated = true, 
-			   bool ideal_aggr = false ){
+			   bool ideal_aggr = false,
+         const char* output_suffix = ".root" ){
   
     
 
@@ -1616,12 +1615,12 @@ void get_eec_histograms_3d(int dataType = 1,
  
     
   cout<<"let's start :)  " <<endl;
-  //do_hist(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr);
+  //do_hist(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr, beg_event, end_event, output_suffix);
   //do_hist_e3c(filenames, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr);
 
     if(dataType>0){
       //  cout<<" do_hist_gen "<<endl;
-      //do_hist_gen(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr);
+      do_hist_gen(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated, ideal_aggr, beg_event, end_event, output_suffix);
       do_hist_e3c_gen(filename, folder, dataType, isMC, pT_low, pT_high, n, btag, aggregated);
       cout<<" get_efficiency_histograms "<<endl;
       get_efficiency_histograms(filename, folder, dataset, btag);

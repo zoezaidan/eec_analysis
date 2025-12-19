@@ -1,0 +1,117 @@
+#!/usr/bin/env python
+import os
+import ROOT
+
+# ----------------------- CONFIG -----------------------
+tree_name       = "hiEvtAnalyzer/HiTree"   # or "dir/subdir/tree"
+n_jobs          = 100
+job_dir         = "exec_jobs"
+macro_name      = "~/eec_analysis/get_eec_histograms_3d.cpp"
+
+# ------------ Inputs of the macro --------------
+
+#for lowEn data: "/data_CMS/cms/kalipoliti/bJet2017G/LowEGJet/aggrTMVA_fixedMassBug/all_merged_HiForestMiniAOD.root"
+#for highEn data: "/data_CMS/cms/kalipoliti/bJet2017G/HighEGJet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root" 
+#for bjet:  "/data_CMS/cms/kalipoliti/qcdMC/bjet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"
+#for dijet: "/data_CMS/cms/kalipoliti/qcdMC/dijet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"
+
+input_root_file ="/data_CMS/cms/kalipoliti/qcdMC/dijet/aggrTMVA_fixedMassBug/merged_HiForestMiniAOD.root"
+
+#------------- Datatype --------------
+
+#for lowEn data: -1
+#for highEn data: 0
+#for bjet: 1
+#for dijet: 2
+#for bjet_herwig: 3
+dataType = 2
+
+#Other Variables
+pT_low   = 80
+pT_high  = 140
+n        = 1
+
+#These are very important! Change if needed
+btag        = False
+aggregated  = False
+ideal_aggr    = False
+
+# ------------------------------------------------------
+
+# Create output directory
+if not os.path.exists(job_dir):
+    os.makedirs(job_dir)
+
+# Open ROOT file
+f = ROOT.TFile.Open(input_root_file)
+if not f or f.IsZombie():
+    raise RuntimeError("Could not open ROOT file: %s" % input_root_file)
+
+# Support "dir/subdir/tree" paths
+if "/" in tree_name:
+    parts = tree_name.split("/")
+    current = f
+    for p in parts[:-1]:
+        current = current.Get(p)
+        if not current:
+            raise RuntimeError("Directory '%s' not found in file" % p)
+    tree = current.Get(parts[-1])
+else:
+    tree = f.Get(tree_name)
+
+if not tree:
+    raise RuntimeError("TTree '%s' not found in file" % tree_name)
+
+total_events = tree.GetEntries()
+print("Total events in TTree '%s': %d" % (tree_name, total_events))
+
+# Compute chunk size
+events_per_job = (total_events + n_jobs - 1) // n_jobs
+print("Events per job: %d" % events_per_job)
+
+# ----------------------- JOB CREATION -----------------------
+
+for job_id in range(n_jobs):
+    start = job_id * events_per_job
+    end   = min(start + events_per_job, total_events)
+
+    if start >= total_events:
+        break
+
+    jobfile = "%s/job_%d.sh" % (job_dir, job_id)
+
+    with open(jobfile, "w") as fsh:
+        fsh.write("#!/bin/bash\n")
+        fsh.write('echo "Running on $(hostname)"\n\n')
+
+        # Setup environment
+        #fsh.write("source /opt/exp_soft/llr/root/v6.18.04-el7-py27-gcc8X/bin/thisroot.sh\n")
+
+        #fsh.write("source /opt/exp_soft/llr/root/v6.32-el9-gcc14xx-py3918/bin/thisroot.sh\n")  
+        fsh.write("cd ~/CMSSW_15_1_0/src/EEC_Zoe/\n")
+        #fsh.write("eval `cmsenv`\n\n")
+
+        # ROOT macro call
+        # Note: escaping quotes for shell
+        macro_call = (
+            'root -b -q "%s(%d, %d, %d, %d, %d, %d, %s, %s, %s, \\"_%d.root\\")"\n'
+            % (
+                macro_name,
+                dataType,
+                pT_low,
+                pT_high,
+                n,
+                start,
+                end,
+                "true" if btag else "false",
+                "true" if aggregated else "false",
+                "true" if ideal_aggr else "false",
+                job_id,
+            )
+        )
+
+        fsh.write(macro_call)
+
+    os.chmod(jobfile, 0o755)
+
+print("Generated job scripts in: %s/" % job_dir)

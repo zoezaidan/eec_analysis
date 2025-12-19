@@ -497,7 +497,6 @@ int maxEvents = t.GetEntries();
 
                     //Fill
                     Double_t filling[4] = {mB, dr, eec, jet_pt};
-                    
                     h4D_all->Fill(filling, weight_tree);
                     if(isMC){
                             
@@ -649,9 +648,7 @@ void do_hist_gen(TString &filename,	TString folder, int &dataType, bool &isMC, F
         if (ient % 1000000 == 0) {
             std::cout << "entry nb = " << ient << std::endl;
         }
- 
         t.GetEntry(ient); 
-
 
         //Get the MC event weight
         Float_t weight_tree = t.weight;
@@ -807,7 +804,6 @@ void do_hist_no_mb(TString &filename,  TString &dataset, Float_t &pT_low, Float_
     TString fin_name = filename;
     tTree t;
     t.Init(fin_name,isMC);
-
     // Turn off all branches and turn on only the interesting ones
     // Attention! If a branch is off, it will return bs without crashing 
     t.SetBranchStatus("*", 0);
@@ -1028,7 +1024,7 @@ void get_eec_histograms_4d(int dataType = 2,
   bool isMC = true;
   
 
-  if(dataType == -1){  //________________________________data High______________________________
+  if(dataType == -1){  //________________________________data______________________________
     filename = "/data_CMS/cms/kalipoliti/bJet2017G/LowEGJet/aggrTMVA_fixedMassBug/all_merged_HiForestMiniAOD.root";
     dataset = "LowEGJet";
     isMC = false;

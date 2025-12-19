@@ -1,5 +1,5 @@
 //This macro plots many different things that can be interesting to look at :)
-#include "binning_histos.h"
+#include "binning_histos_small.h"
 #include <TFile.h>
 #include <TH1.h>
 #include <TH3.h>
@@ -109,17 +109,17 @@ void eec_aggr_effect(){
   bool show_gen = false;
   
   //Get your files
-  TFile *file_aggr = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_aggr_BDT_n1_data_highEn_80_140.root";    //"/data_CMS/cms/meuli/testplots/wp09/hist_3d_b_bjet_80_140.root", "read");
+  TFile *file_aggr = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_aggr_BDT_n1_data_highEn_80_140.root", "read");          //"/data_CMS/cms/meuli/testplots/wp09/hist_3d_b_bjet_80_140.root", "read");
   
-  TFile *file_aggr_other_wp = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_noaggr_BDT_n1_data_highEn_80_140.root";    //"/data_CMS/cms/meuli/testplots/FN_new/hist_3d_b_bjet_80_140.root", "read");
+  TFile *file_aggr_other_wp = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_noaggr_BDT_n1_data_highEn_80_140.root", "read");        //"/data_CMS/cms/meuli/testplots/FN_new/hist_3d_b_bjet_80_140.root", "read");
   
-  TFile *file_aggr_ideal = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_aggr_BDT_ideal_aggr_n1_data_highEn_80_140.root";    //"/data_CMS/cms/meuli/testplots/FN_ideal/hist_3d_idealaggr_b_bjet_80_140.root", "read");
+  TFile *file_aggr_ideal = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_aggr_BDT_ideal_aggr_n1_data_highEn_80_140.root", "read");         //"/data_CMS/cms/meuli/testplots/FN_ideal/hist_3d_idealaggr_b_bjet_80_140.root", "read");
   
-  TFile *file_aggr_gen = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_gen_aggr_n1_MC_bjet_80_140.root";    //"/data_CMS/cms/meuli/testplots/wp09/hist_3d_gen_b_bjet_80_140.root", "read");
+  TFile *file_aggr_gen = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_gen_aggr_n1_MC_bjet_80_140.root", "read");       //"/data_CMS/cms/meuli/testplots/wp09/hist_3d_gen_b_bjet_80_140.root", "read");
   
-  TFile *file_noaggr = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_noaggr_n1_MC_bjet_80_140.root";    //"/data_CMS/cms/meuli/testplots/wp09/hist_3d_b_bjet_noaggr_80_140.root", "read");
+  TFile *file_noaggr = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_noaggr_n1_MC_bjet_80_140.root", "read");       //"/data_CMS/cms/meuli/testplots/wp09/hist_3d_b_bjet_noaggr_80_140.root", "read");
     
-  TFile *file_noaggr_gen = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_gen_aggr_n1_MC_bjet_80_140.root";    //"/data_CMS/cms/meuli/testplots/wp09/hist_3d_gen_b_bjet_noaggr_80_140.root", "read");
+  TFile *file_noaggr_gen = new TFile("/data_CMS/cms/zaidan/test_for_code_mods/run_with_mod_code/hist_3d_gen_aggr_n1_MC_bjet_80_140.root", "read");       //"/data_CMS/cms/meuli/testplots/wp09/hist_3d_gen_b_bjet_noaggr_80_140.root", "read");
     
   //Get the histograms
   TH3D *h_3D_aggr = (TH3D*)file_aggr->Get("h3D");
@@ -423,10 +423,10 @@ void eec_ratio(){
 void pT_effect(){
 
     //Get file
-  TFile *file = new TFile("/data_CMS/cms/zaidan/third_run/hist_3d_gen_aggr_n1_b_dijet_80_140.root", "read");    //"/data_CMS/cms/meuli/testplots/wp095/hist_3d_gen_b_bjet_80_140.root", "read");
+  TFile *file = new TFile("/data_CMS/cms/zaidan/eec_trees/fran_bins/hist_3d_gen_aggr_n1_MC_bjet_80_140.root", "read");  //hist_3d_gen_aggr_n1_b_dijet_80_140.root", "read");    //"/data_CMS/cms/meuli/testplots/wp095/hist_3d_gen_b_bjet_80_140.root", "read");
 
     //Get histogram
-    TH3D *h_3D = (TH3D*)file->Get("h3D");
+    TH3D *h_3D = (TH3D*)file->Get("h3D_b1");
 
     //Select the different pT bins and project to 1D EEC(dr) distributions
     TH1D *h_1 = (TH1D*)h_3D->ProjectionY("h_1", 1, bins_mb, 1,1);
@@ -490,7 +490,7 @@ void pT_effect(){
     leg->AddEntry(h_3, "120 < p_{T} < 140 GeV");
     leg->Draw("same");
 
-    c->Print("/data_CMS/cms/zaidan/third_run/eec_pt_effect_dijet.pdf");
+    c->Print("/data_CMS/cms/zaidan/eec_trees/fran_bins/eec_pt_effect_dijet.pdf");
 
 }
 
@@ -2419,6 +2419,6 @@ void test_plots_november(){
 
     //Call the plots that you want to see
 
-    plot_eec_distribution();
-    //flavour_effect();
+    //plot_eec_distribution();
+    pT_effect();
 }
